@@ -1,0 +1,1 @@
+# Geração de gráficos e nuvens de palavras

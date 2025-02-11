@@ -1,0 +1,1 @@
+# Implementação do resumo automático
