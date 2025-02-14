@@ -8,7 +8,6 @@ O **Analisador Inteligente de Texto** será uma ferramenta robusta e versátil p
 
 O objetivo desse projeto é desenvolver um analisador textual completo que combine métodos analíticos tradicionais e inteligência artificial para atender a diferentes necessidades de análise textual em áreas como:  
 
-- **Análise de Sentimento**: Compreender a percepção de textos em avaliações de produtos, opiniões de usuários e feedbacks.  
 - **Classificação Automática de Documentos**: Automatizar a categorização de textos, como e-mails, artigos ou relatórios.  
 - **Extração de Palavras-chave**: Identificar os termos mais relevantes de documentos extensos.  
 - **Resumo de Notícias ou Relatórios**: Economizar tempo ao acessar as principais ideias de textos longos.  
