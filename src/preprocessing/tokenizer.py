@@ -3,7 +3,8 @@
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
-from cleaner import clean_text
+from collections import Counter
+from .cleaner import clean_text
 stopwords = nltk.corpus.stopwords.words('portuguese')
 
 text = clean_text()
@@ -17,8 +18,14 @@ def tokenizer(text):
     
     return tokens
 
-if __name__ == '__main__':
+def word_counter(tokens):
+   """ Contagem de frequência de palavras importantes
+   """
+   return Counter(tokens)
 
+
+if __name__ == '__main__':
+    
     print(tokenizer(text))
     
 

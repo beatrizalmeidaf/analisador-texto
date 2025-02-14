@@ -1,2 +1,4 @@
-enelvo
 nltk
+streamlit 
+pandas 
+matplotlib
