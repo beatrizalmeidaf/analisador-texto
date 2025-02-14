@@ -94,7 +94,7 @@ O projeto utilizará tecnologias amplamente reconhecidas por sua eficiência e f
   - Visualizações: `matplotlib`, `wordcloud`  
 - **Machine Learning**: `scikit-learn`, `PyTorch`  
 - **Sumarização e NLP Avançada**: `transformers`  
-- **Desenvolvimento Web**: `Flask` ou `Streamlit`  
+- **Desenvolvimento Web**:  `Streamlit`  
 
 ---
 

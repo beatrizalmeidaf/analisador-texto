@@ -5,8 +5,6 @@ import re
 from enelvo.normaliser import Normaliser
 from collections import Counter
 
-
-# teste de leitura de arquivo
 def read_txt():
     data = os.path.join(os.getcwd(), "data/teste.txt")
 
