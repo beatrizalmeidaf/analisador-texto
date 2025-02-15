@@ -44,7 +44,7 @@ A ferramenta será composta pelos seguintes módulos:
   - Cálculo de métricas estatísticas: média, mediana e desvio padrão do comprimento das palavras.  
   - Geração de gráficos (histogramas, nuvem de palavras).  
   - Cálculo de TF-IDF para avaliar a relevância de termos específicos.  
-- **Tecnologias Planejadas**: `pandas`, `numpy`, `matplotlib`.  
+- **Tecnologias Planejadas**: `pandas`, `word_cloud`, `matplotlib`.  
 
 ### 3. Representação Matemática do Texto  
 - **Objetivo**: Transformar o texto em formatos matemáticos para análises avançadas.  

@@ -1,14 +1,14 @@
 import streamlit as st
 import sys
 import os
-import pandas as pd
-import matplotlib.pyplot as plt
 
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root_dir)
 
 from src.preprocessing.cleaner import clean_text
 from src.preprocessing.tokenizer import tokenizer, word_counter
+from src.analysis.statistics import calculate_metrics, calculate_tfidf
+from src.analysis.visualization import plot_metrics, generate_wordcloud, plot_tfidf, plot_word_frequency
 
 def save_temp_text(text):
     """ Salva o texto em um arquivo temporário para processamento 
@@ -23,19 +23,19 @@ def save_temp_text(text):
 def main():
     st.title('Analisador de Texto')
     
-    # opções de entrada: texto ou arquivo
+    # método de entrada
     input_method = st.radio(
         "Escolha o método de entrada:",
         ("Digitar texto", "Upload de arquivo .txt")
     )
     
+    # obter texto de entrada
     text_input = ""
     if input_method == "Digitar texto":
         text_input = st.text_area("Digite ou cole seu texto aqui:", height=200)
     else:
         uploaded_file = st.file_uploader("Escolha um arquivo .txt", type="txt")
-        if uploaded_file is not None:
-            # lidar com diferentes encodings
+        if uploaded_file:
             for encoding in ['utf-8', 'latin-1', 'cp1252']:
                 try:
                     text_input = uploaded_file.read().decode(encoding)
@@ -43,71 +43,88 @@ def main():
                 except UnicodeDecodeError:
                     continue
             
-            # mostrar preview
             if text_input:
                 st.subheader("Preview do arquivo:")
                 st.write(text_input[:500] + "..." if len(text_input) > 500 else text_input)
-            else:
-                st.error("Não foi possível ler o arquivo. Verifique se ele está em um formato de texto válido.")
     
-    process_button = st.button('Analisar Texto')
-    
-    if process_button:
+    # botão principal de análise
+    if st.button('Analisar Texto'):
         if text_input:
-            save_temp_text(text_input)
-            
             with st.spinner('Processando texto...'):
                 try:
-                    # processa o texto
+                    # processamento inicial
+                    save_temp_text(text_input)
                     cleaned_text = clean_text()
                     tokens = tokenizer(cleaned_text)
                     word_counts = word_counter(tokens)
                     
-                    col1, col2 = st.columns(2)
+                    # diferentes tipos de análise
+                    tab1, tab2, tab3, tab4 = st.tabs([
+                        "Estatísticas", 
+                        "Visualizações", 
+                        "Busca e Informações",
+                        "Classificação e Sumarização"
+                    ])
                     
-                    with col1:
-                        st.subheader('Texto Original')
-                        st.write(text_input[:1000] + "..." if len(text_input) > 1000 else text_input)
+                    with tab1:
+                        st.subheader("Análise Estatística")
+                        
+                        # métricas básicas
+                        metrics = calculate_metrics(tokens)
+                        col1, col2, col3 = st.columns(3)
+                        
+                        with col1:
+                            st.metric("Média Tamanho de Palavras", f"{metrics['media']:.2f}")
+                        with col2:
+                            st.metric("Mediana Tamanho de Palavras", f"{metrics['mediana']:.2f}")
+                        with col3:
+                            st.metric("Desvio Padrão Tamanho de Palavras", f"{metrics['desvio_padrao']:.2f}")
+                        
+                        # TF-IDF
+                        st.subheader("Análise TF-IDF")
+                        df_tfidf = calculate_tfidf(tokens)
+                        
+                        # tabela TF-IDF
+                        st.write("Top 15 termos por TF-IDF:")
+                        st.dataframe(df_tfidf.head(15))
+                        
+                        # gráfico TF-IDF
+                        st.write("Visualização TF-IDF:")
+                        fig_tfidf = plot_tfidf(df_tfidf)
+                        st.pyplot(fig_tfidf)
                     
-                    with col2:
-                        st.subheader('Texto Limpo')
-                        st.write(cleaned_text[:1000] + "..." if len(cleaned_text) > 1000 else cleaned_text)
+                    with tab2:
+                        st.subheader("Visualizações")
+                        
+                        # gráfico de métricas
+                        st.write("Gráfico de Métricas")
+                        fig_metrics = plot_metrics(
+                            metrics['media'],
+                            metrics['mediana'],
+                            metrics['desvio_padrao']
+                        )
+                        st.pyplot(fig_metrics)
+                        
+                        # gráfico de frequência de palavras
+                        st.write("Palavras Mais Frequentes")
+                        fig_freq = plot_word_frequency(word_counts)
+                        st.pyplot(fig_freq)
+                        
+                        # nuvem de palavras
+                        st.write("Nuvem de Palavras")
+                        fig_wordcloud = generate_wordcloud(tokens)
+                        if fig_wordcloud:
+                            st.pyplot(fig_wordcloud)
                     
-                    st.subheader('Tokens (primeiros 100)')
-                    st.write(tokens[:100])
+                    with tab3:
+                        st.info("Funcionalidade de busca e informações em desenvolvimento")
                     
-                    # palavras mais frequentes
-                    st.subheader('Top 15 Palavras Mais Frequentes')
-                    top_words = word_counts.most_common(15)
-                    df = pd.DataFrame(top_words, columns=['Palavra', 'Frequência'])
-                    
-                    col1, col2 = st.columns([2, 3])
-                    
-                    with col1:
-                        st.table(df)
-                    
-                    with col2:
-                        # visualização - gráfico de barras
-                        if len(top_words) > 0:
-                            fig, ax = plt.subplots(figsize=(10, 6))
-                            bars = ax.barh(df['Palavra'], df['Frequência'], color='blue')
-                            ax.set_title('Frequência das Palavras')
-                            ax.set_xlabel('Frequência')
-                            ax.invert_yaxis()  
-                            
-                            # adiciona os valores ao lado das barras
-                            for bar in bars:
-                                width = bar.get_width()
-                                ax.text(width + 0.5, bar.get_y() + bar.get_height()/2, 
-                                        f'{width:.0f}', ha='left', va='center')
-                            
-                            plt.tight_layout()
-                            st.pyplot(fig)
+                    with tab4:
+                        st.info("Funcionalidade de classificação e sumarização em desenvolvimento")
                 
                 except Exception as e:
-                    st.error(f"Ocorreu um erro durante o processamento: {str(e)}")
-                    st.exception(e)  
-                    
+                    st.error(f"Erro durante o processamento: {str(e)}")
+                    st.exception(e)
         else:
             st.warning('Por favor, insira um texto ou faça upload de um arquivo para análise.')
     
@@ -115,11 +132,12 @@ def main():
     with st.expander("Sobre o Analisador de Texto"):
         st.write("""
         Este analisador de texto realiza as seguintes operações:
-        1. **Limpeza de texto**: Remove pontuações, caracteres especiais, números e converte para minúsculas.
-        2. **Normalização**: Corrige erros ortográficos comuns.
-        3. **Tokenização**: Divide o texto em unidades menores (tokens).
-        4. **Remoção de stopwords**: Elimina palavras comuns sem valor semântico significativo.
-        5. **Análise de frequência**: Calcula e exibe as palavras mais frequentes no texto.
+        1. **Limpeza e Preprocessamento**: Remove pontuações, caracteres especiais e normaliza o texto
+        2. **Análise Estatística**: Calcula métricas sobre o comprimento das palavras
+        3. **Análise TF-IDF**: Identifica termos mais relevantes no texto
+        4. **Visualizações**: Gera gráficos e nuvem de palavras
+        5. **Busca e Informações**: *(em desenvolvimento)*
+        6. **Classificação e Sumarização**: *(em desenvolvimento)*
         """)
 
 if __name__ == '__main__':
