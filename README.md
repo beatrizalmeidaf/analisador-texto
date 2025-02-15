@@ -54,10 +54,10 @@ A ferramenta será composta pelos seguintes módulos:
 - **Tecnologias Planejadas**: `numpy`.  
 
 ### 4. Eficiência em Busca e Processamento  
-- **Objetivo**: Melhorar a rapidez e precisão na busca de palavras e informações.  
+- **Objetivo**: Melhorar a rapidez e precisão na busca de palavras e informações, com foco em entender o contexto das palavras dentro do texto  
 - **Funcionalidades Planejadas**:  
   - Implementação de uma estrutura Trie (árvore prefixada) para buscas otimizadas.  
-  - Detecção automática de palavras-chave.  
+  - Detecção automática de palavras-chave, com análise do contexto para interpretar sentimentos ou intenções do texto.  
 - **Tecnologias Planejadas**: Python (`dict`, `set`).  
 
 ### 5. Classificação Automática de Texto com Inteligência Artificial  
@@ -73,6 +73,14 @@ A ferramenta será composta pelos seguintes módulos:
   - Geração de resumos utilizando técnicas baseadas em NLP modernas.  
 - **Tecnologias Planejadas**: `sumy`, `transformers`.  
 
+### 7. Detecção de Fake News  
+- **Objetivo**: Identificar se uma informação pode ser falsa ou enganosa.  
+- **Funcionalidades Planejadas**:  
+  - Análise de confiabilidade baseada em fontes conhecidas.  
+  - Verificação de padrões textuais comuns em fake news.  
+  - Utilização de modelos de aprendizado profundo treinados em bases de dados de notícias verdadeiras e falsas.  
+- **Tecnologias Planejadas**: `scikit-learn`, `transformers`, `TensorFlow`, `scrapy` (para coleta de dados).  
+
 ---
 
 ## **Casos de Uso**
@@ -81,7 +89,9 @@ A ferramenta será útil em diferentes contextos:
 - **Empresas de Tecnologia**: Extração de insights em dados de usuários ou feedbacks.  
 - **Jornalismo e Mídia**: Geração de resumos de notícias e análise de tendências.  
 - **Acadêmico e Pesquisa**: Processamento de grandes volumes de textos para estudos quantitativos e qualitativos.  
-- **Marketing**: Identificação de palavras-chave.
+- **Marketing**: Identificação de palavras-chave.  
+- **Checagem de Fatos**: Verificação automática da veracidade de textos e notícias.  
+
 ---
 
 ## **Tecnologias Planejadas**
@@ -104,5 +114,4 @@ O projeto utilizará tecnologias amplamente reconhecidas por sua eficiência e f
 2. Implementação de cada módulo de forma independente, com integração posterior.  
 3. Desenvolvimento de testes automatizados para garantir a qualidade do código.  
 4. Criação de uma interface web para facilitar o uso.  
-
 
