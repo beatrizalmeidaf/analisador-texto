@@ -58,9 +58,13 @@ def initialize_session_state():
         st.session_state.processed_data = None
     if 'viz_type' not in st.session_state:
         st.session_state.viz_type = "Nuvem de Palavras"
+    if 'tab' not in st.session_state:
+        st.session_state.tab = "Estatísticas"
 
 def handle_viz_selection(viz_name):
     st.session_state.viz_type = viz_name
+    st.session_state.tab = "Visualizações"
+
 
 def main():
     initialize_session_state()
@@ -73,6 +77,7 @@ def main():
     )
     
     text_input = ""
+
     if input_method == "Digitar texto":
         text_input = st.text_area("Digite ou cole seu texto aqui:", height=200)
     else:
@@ -86,14 +91,16 @@ def main():
                     continue
             
             if text_input:
-                st.subheader("Preview do arquivo:")
-                st.write(text_input[:500] + "..." if len(text_input) > 500 else text_input)
+                with st.expander("Mostrar Preview do Arquivo"):
+                    st.write(text_input[:1000] + "..." if len(text_input) > 1000 else text_input)
     
-    if st.button('Analisar Texto'):
+    analyze_button = st.button('Analisar Texto')
+    if analyze_button:
         if text_input:
             with st.spinner('Processando texto...'):
                 try:
                     st.session_state.processed_data = process_text(text_input)
+                    st.session_state.tab = "Estatísticas"
                 except Exception as e:
                     st.error(f"Erro durante o processamento: {str(e)}")
                     st.exception(e)
@@ -103,14 +110,17 @@ def main():
     if st.session_state.processed_data is not None:
         cleaned_text, tokens, word_counts, metrics, df_tfidf = st.session_state.processed_data
         
-        tab1, tab2, tab3, tab4 = st.tabs([
-            "Estatísticas", 
-            "Visualizações", 
-            "Busca e Informações",
-            "Classificação e Sumarização"
-        ])
+        st.session_state.tab = st.radio(
+            "",
+            ["Estatísticas", "Visualizações", "Busca e Informações", "Classificação e Sumarização"],
+            horizontal=True,
+            label_visibility="hidden",
+            index=["Estatísticas", "Visualizações", "Busca e Informações", "Classificação e Sumarização"].index(st.session_state.tab)
+        )
         
-        with tab1:
+        st.divider()
+        
+        if st.session_state.tab == "Estatísticas":
             st.subheader("Análise Estatística")
             
             col1, col2, col3 = st.columns(3)
@@ -157,7 +167,7 @@ def main():
                 else:
                     st.warning("Não há dados TF-IDF disponíveis para exibição.")
         
-        with tab2:
+        elif st.session_state.tab == "Visualizações":
             st.container()
             render_visualization(st.session_state.viz_type, tokens, metrics, word_counts, df_tfidf)
 
@@ -185,11 +195,11 @@ def main():
                     ):
                         pass
                     st.markdown(f"<small>{viz_desc}</small>", unsafe_allow_html=True)
-
-        with tab3:
+        
+        elif st.session_state.tab == "Busca e Informações":
             st.info("Funcionalidade de busca e informações em desenvolvimento")
         
-        with tab4:
+        elif st.session_state.tab == "Classificação e Sumarização":
             st.info("Funcionalidade de classificação e sumarização em desenvolvimento")
     
     with st.expander("Sobre o Analisador de Texto"):
