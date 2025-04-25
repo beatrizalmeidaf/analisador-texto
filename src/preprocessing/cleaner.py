@@ -1,5 +1,3 @@
-# Funções para limpeza de texto
-
 import os
 import re
 

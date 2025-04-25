@@ -5,7 +5,7 @@ import numpy as np
 from wordcloud import WordCloud
 from matplotlib.gridspec import GridSpec
 
-# Configurações globais de estilo
+# configurações globais de estilo
 plt.style.use('seaborn-v0_8-darkgrid')
 sns.set_palette("Blues")
 

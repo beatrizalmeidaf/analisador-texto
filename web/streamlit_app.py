@@ -11,6 +11,7 @@ from src.preprocessing.cleaner import clean_text
 from src.preprocessing.tokenizer import tokenizer, word_counter
 from src.analysis.statistics import calculate_metrics, calculate_tfidf
 from src.analysis.visualization import plot_metrics, generate_wordcloud, plot_tfidf, plot_word_frequency
+# from src.representation import bow, cooccurrence
 
 st.set_page_config(layout="wide")
 
@@ -79,6 +80,7 @@ def process_text(text):
     word_counts = word_counter(tokens)
     metrics = calculate_metrics(tokens)
     df_tfidf = calculate_tfidf(tokens)
+
     return cleaned_text, tokens, word_counts, metrics, df_tfidf
 
 def render_visualization(viz_type, tokens, metrics, word_counts, df_tfidf):
@@ -205,33 +207,50 @@ def main():
             st.markdown("""
             ### Interpretação das Métricas
 
-            A métrica de comprimento de palavras analisa a distribuição do tamanho das palavras em um texto. Em geral, a média do comprimento das palavras em um texto em português varia entre **4 e 6 caracteres**.  
+            A métrica de **comprimento de palavras** analisa a distribuição do tamanho das palavras em um texto.  
+            Em português, a **média do comprimento das palavras** geralmente varia entre **4 e 6 caracteres**.
 
-            - **Média menor que 4** → O texto contém muitas palavras curtas, podendo indicar um estilo mais informal, como diálogos ou mensagens rápidas.  
-            - **Média entre 4 e 6** → O texto apresenta um equilíbrio entre palavras curtas e longas, comum em artigos, notícias e textos técnicos.  
-            - **Média maior que 6** → O texto tende a ter palavras mais longas, indicando um vocabulário mais sofisticado ou técnico, típico de textos acadêmicos e jurídicos.  
+            - **Média menor que 4** → O texto contém muitas palavras curtas, como artigos, pronomes e preposições.  
+            Pode indicar um estilo mais informal, como mensagens rápidas, redes sociais ou diálogos.
+            - **Média entre 4 e 6** → Representa um equilíbrio entre palavras curtas e longas,  
+            comum em textos jornalísticos, textos acadêmicos introdutórios e relatórios técnicos.
+            - **Média maior que 6** → Indica presença de palavras mais longas e complexas,  
+            geralmente associadas a vocabulário técnico, jurídico ou acadêmico avançado.
 
-            Além disso, o **desvio padrão** mede a variação no comprimento das palavras.  
-            - Um desvio padrão alto indica grande diversidade de tamanhos.  
-            - Um desvio padrão baixo sugere palavras com tamanhos mais homogêneos.  
+            O **desvio padrão** mede a dispersão do comprimento das palavras:
+            - **Desvio padrão menor que 1.5** → Baixa variação: o texto utiliza palavras com tamanhos semelhantes,  
+            sugerindo estilo uniforme e direto (ex: manuais, instruções técnicas).
+            - **Desvio padrão entre 1.5 e 2.5** → Variação controlada: o texto apresenta vocabulário diversificado com equilíbrio,  
+            típico de textos formais bem estruturados.
+            - **Desvio padrão entre 2.5 e 3.0** → Alta variação: o texto mistura palavras curtas e longas com frequência,  
+            o que pode indicar criatividade ou linguagem mais expressiva e dinâmica.
+            - **Desvio padrão acima de 3.0** → Variação muito alta: textos assim costumam ter vocabulário extremamente diverso,  
+            podendo refletir informalidade excessiva, uso de gírias, transcrições de fala espontânea ou áreas altamente técnicas.
             """)
 
             st.divider()
             
             with st.container():
                 st.markdown("""
-                    A análise TF-IDF é uma métrica estatística que avalia a importância de uma palavra em um texto. 
-                    Ela combina dois fatores:
-                    
-                    * **TF (Term Frequency)**: Frequência com que uma palavra aparece no texto
-                    * **IDF (Inverse Document Frequency)**: Quão única ou rara é essa palavra
-                    
-                    Um valor TF-IDF alto indica que a palavra é:
-                    * Muito frequente neste texto específico
-                    * Relativamente rara em textos em geral
-                    
-                    Isso ajuda a identificar as palavras mais relevantes e características do seu texto.
-                """)
+                        A análise **TF-IDF** é uma métrica estatística que avalia a importância de uma palavra em um texto.  
+                        Ela combina dois fatores:
+
+                        * **TF (Term Frequency)**: Frequência com que uma palavra aparece no texto  
+                        * **IDF (Inverse Document Frequency)**: Quão única ou rara é essa palavra
+
+                        Um valor **TF-IDF alto** (ex: acima de 0.3) indica que a palavra é:
+                        * Muito frequente neste texto específico
+                        * Relativamente rara em textos em geral  
+                        Portanto, é uma **palavra característica e relevante** do texto.
+
+                        Um valor **TF-IDF baixo** (ex: abaixo de 0.1) sugere que a palavra:
+                        * É comum em muitos textos ou
+                        * Aparece poucas vezes no texto analisado  
+                        Logo, é **menos útil para identificar o tema central** do texto.
+
+                        Essa métrica ajuda a destacar as palavras mais importantes para a compreensão do conteúdo.
+                        """)
+
             
             st.divider()
             
@@ -279,7 +298,7 @@ def main():
                         pass
                     st.markdown(f"<small>{viz_desc}</small>", unsafe_allow_html=True)
         
-        elif st.session_state.tab == "Busca e Informações":
+        elif st.session_state.tab == "Análise de Sentimentos":
             st.info("Funcionalidade de busca e informações em desenvolvimento")
         
         elif st.session_state.tab == "Classificação e Sumarização":
@@ -287,12 +306,12 @@ def main():
     
     with st.expander("Sobre o Analisador de Texto"):
         st.write("""
-        Este analisador de texto realiza as seguintes operações:
+        Esse analisador de texto realiza as seguintes operações:
         1. **Limpeza e Preprocessamento**: Remove pontuações, caracteres especiais e normaliza o texto
         2. **Análise Estatística**: Calcula métricas sobre o comprimento das palavras
         3. **Análise TF-IDF**: Identifica termos mais relevantes no texto
         4. **Visualizações**: Gera gráficos e nuvem de palavras
-        5. **Busca e Informações**: *(em desenvolvimento)*
+        5. **Análise de Sentimentos**: *(em desenvolvimento)*
         6. **Classificação e Sumarização**: *(em desenvolvimento)*
         """)
 

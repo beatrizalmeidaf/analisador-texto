@@ -1,1 +1,0 @@
-# Algoritmo para detectar palavras-chave

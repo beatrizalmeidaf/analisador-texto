@@ -53,12 +53,14 @@ A ferramenta será composta pelos seguintes módulos:
   - Implementação do modelo Bag of Words (BoW).  
 - **Tecnologias Planejadas**: `numpy`.  
 
-### 4. Eficiência em Busca e Processamento  
-- **Objetivo**: Melhorar a rapidez e precisão na busca de palavras e informações, com foco em entender o contexto das palavras dentro do texto  
+### 4. Análise de Sentimentos  
+- **Objetivo**: Avaliar automaticamente a carga emocional expressa em textos, identificando se o conteúdo transmite sentimentos positivos, negativos ou neutros.  
 - **Funcionalidades Planejadas**:  
-  - Implementação de uma estrutura Trie (árvore prefixada) para buscas otimizadas.  
-  - Detecção automática de palavras-chave, com análise do contexto para interpretar sentimentos ou intenções do texto.  
-- **Tecnologias Planejadas**: Python (`dict`, `set`).  
+  - Análise de sentimentos com base em dicionários léxicos ou modelos treinados.  
+  - Detecção de polaridade (positiva, negativa, neutra).  
+  - Classificação emocional mais detalhada (ex: alegria, raiva, tristeza) com modelos de deep learning.  
+  - Visualização da distribuição de sentimentos em gráficos.  
+- **Tecnologias Planejadas**: `nltk`, `textblob`, `transformers` (como BERT ou RoBERTa), `matplotlib`.
 
 ### 5. Classificação Automática de Texto com Inteligência Artificial  
 - **Objetivo**: Automatizar a categorização de textos.
