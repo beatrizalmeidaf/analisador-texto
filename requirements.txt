@@ -2,3 +2,7 @@ nltk
 streamlit 
 pandas 
 matplotlib
+transformers
+tf-keras
+
+#maritaca-ai/sabia-7b

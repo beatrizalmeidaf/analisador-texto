@@ -53,29 +53,20 @@ A ferramenta será composta pelos seguintes módulos:
   - Implementação do modelo Bag of Words (BoW).  
 - **Tecnologias Planejadas**: `numpy`.  
 
-### 4. Análise de Sentimentos  
-- **Objetivo**: Avaliar automaticamente a carga emocional expressa em textos, identificando se o conteúdo transmite sentimentos positivos, negativos ou neutros.  
-- **Funcionalidades Planejadas**:  
-  - Análise de sentimentos com base em dicionários léxicos ou modelos treinados.  
-  - Detecção de polaridade (positiva, negativa, neutra).  
-  - Classificação emocional mais detalhada (ex: alegria, raiva, tristeza) com modelos de deep learning.  
-  - Visualização da distribuição de sentimentos em gráficos.  
-- **Tecnologias Planejadas**: `nltk`, `textblob`, `transformers` (como BERT ou RoBERTa), `matplotlib`.
-
-### 5. Classificação Automática de Texto com Inteligência Artificial  
+### 4. Classificação Automática de Texto com Inteligência Artificial  
 - **Objetivo**: Automatizar a categorização de textos.
 - **Funcionalidades Planejadas**:  
   - Treinamento de modelos de aprendizado supervisionado para classificação de textos.   
 - **Tecnologias Planejadas**: `scikit-learn`, `PyTorch` ou `TensorFlow`.  
 
-### 6. Resumo Automático de Textos  
+### 5. Resumo Automático de Textos  
 - **Objetivo**: Extrair os principais pontos de textos longos.  
 - **Funcionalidades Planejadas**:  
   - Processamento de textos longos (notícias, relatórios).  
   - Geração de resumos utilizando técnicas baseadas em NLP modernas.  
 - **Tecnologias Planejadas**: `sumy`, `transformers`.  
 
-### 7. Detecção de Fake News  
+### 6. Detecção de Fake News  
 - **Objetivo**: Identificar se uma informação pode ser falsa ou enganosa.  
 - **Funcionalidades Planejadas**:  
   - Análise de confiabilidade baseada em fontes conhecidas.  

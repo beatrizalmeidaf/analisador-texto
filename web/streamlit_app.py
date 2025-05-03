@@ -10,7 +10,9 @@ sys.path.append(root_dir)
 from src.preprocessing.cleaner import clean_text
 from src.preprocessing.tokenizer import tokenizer, word_counter
 from src.analysis.statistics import calculate_metrics, calculate_tfidf
+from src.classification.model import classificador, plot_classification
 from src.analysis.visualization import plot_metrics, generate_wordcloud, plot_tfidf, plot_word_frequency
+from src.question.question import load_qa_pipeline
 # from src.representation import bow, cooccurrence
 
 st.set_page_config(layout="wide")
@@ -128,7 +130,79 @@ def initialize_session_state():
 def handle_viz_selection(viz_name):
     st.session_state.viz_type = viz_name
     st.session_state.tab = "Visualizações"
+
+def render_classification_section(tokens):
+    """Renderiza a seção de classificação no Streamlit"""
+    st.subheader("Classificação do Texto")
     
+    # Texto de explicação
+    st.markdown("""
+    Essa seção utiliza modelos de aprendizado profundo (BERT e RoBERTa) para classificar o texto em:
+    
+    1. **Gênero textual**: Identifica o tipo/formato do texto
+    
+    Os resultados abaixo mostram os gêneros mais prováveis, junto com o nível de confiança da classificação.
+    """)
+    
+    with st.spinner('Realizando classificação do texto... Isso pode levar alguns segundos.'):
+
+        texto_completo = " ".join(tokens)
+        texto_para_classificacao = texto_completo[:min(len(texto_completo), 512)]
+        
+        genero = classificador(texto_para_classificacao)
+        
+        if genero and isinstance(genero, list) and len(genero) > 0:
+            # informações principais com valores
+            genero_mapeado = {
+                        "Promotion": "Promoção",
+                        "Information": "Informativo",
+                        "News": "Notícia",
+                        "Forum": "Fórum",
+                        "Review": "Resenha"
+                    }
+                
+
+            st.info(f"**Gênero Textual:** {genero_mapeado.get(genero[0]['label'], genero[0]['label'])}")
+            st.progress(genero[0]['score'])
+            
+            st.divider()
+            fig = plot_classification(genero)
+            if fig:
+                st.pyplot(fig)
+                
+            with st.expander("Sobre gêneros textuais"):
+                st.markdown("""
+                        #### Gêneros Textuais Detectados
+
+                        - **Notícia**: Conteúdos jornalísticos objetivos e informativos.
+                        - **Informativo**: Textos que visam informar ou instruir, como manuais e comunicados.
+                        - **Promoção**: Textos com intenção comercial ou publicitária.
+                        - **Fórum**: Conteúdos com linguagem mais informal, típicos de fóruns online e discussões.
+                        - **Resenha**: Análises ou avaliações de produtos, serviços ou obras culturais.
+                        """)
+        else:
+            st.warning("Não foi possível classificar o texto. Verifique se o texto possui conteúdo suficiente ou tente novamente.")
+    
+    # marcador para futura implementação de sumarização
+    st.divider()
+    st.subheader("Sumarização do Texto")
+    st.info("A funcionalidade de sumarização automática será implementada em breve. Essa ferramenta gerará um resumo conciso do texto analisado, destacando os pontos mais relevantes.") 
+
+def render_question(text_input):
+    st.title("Perguntas Interpretativas sobre o Texto")
+
+    question = st.text_input("Faça uma pergunta sobre o texto:")
+
+    if question:
+        qa_pipeline = load_qa_pipeline()
+        try:
+            inputs = f"pergunta: {question} contexto: {text_input}"
+            result = qa_pipeline(inputs)
+            st.subheader("Resposta:")
+            st.write(result[0]['generated_text'])
+        except Exception as e:
+            st.error(f"Erro ao processar pergunta: {str(e)}")
+
 
 def main():
     initialize_session_state()
@@ -142,7 +216,18 @@ def main():
     
     text_input = ""
 
-    if input_method == "Upload de arquivo .txt":
+    text_input = ""
+
+    if input_method == "Digitar texto":
+        # área de texto para entrada manual
+        text_input = st.text_area(
+            "Digite ou cole seu texto aqui:",
+            height=250,
+            help="Digite ou cole o texto que deseja analisar."
+        )
+        
+
+    elif input_method == "Upload de arquivo .txt":
         uploaded_file = st.file_uploader(
             "Escolha um arquivo .txt", 
             type="txt",
@@ -297,12 +382,13 @@ def main():
                     ):
                         pass
                     st.markdown(f"<small>{viz_desc}</small>", unsafe_allow_html=True)
-        
-        elif st.session_state.tab == "Análise de Sentimentos":
-            st.info("Funcionalidade de busca e informações em desenvolvimento")
+    
         
         elif st.session_state.tab == "Classificação e Sumarização":
-            st.info("Funcionalidade de classificação e sumarização em desenvolvimento")
+            render_classification_section(tokens)
+
+        elif st.session_state.tab == "Busca e Informações":
+            render_question(text_input)
     
     with st.expander("Sobre o Analisador de Texto"):
         st.write("""
@@ -311,8 +397,7 @@ def main():
         2. **Análise Estatística**: Calcula métricas sobre o comprimento das palavras
         3. **Análise TF-IDF**: Identifica termos mais relevantes no texto
         4. **Visualizações**: Gera gráficos e nuvem de palavras
-        5. **Análise de Sentimentos**: *(em desenvolvimento)*
-        6. **Classificação e Sumarização**: *(em desenvolvimento)*
+        5. **Classificação e Sumarização**: *(em desenvolvimento)*
         """)
 
 if __name__ == '__main__':
