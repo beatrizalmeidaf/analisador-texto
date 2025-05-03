@@ -10,12 +10,25 @@ sys.path.append(root_dir)
 from src.preprocessing.cleaner import clean_text
 from src.preprocessing.tokenizer import tokenizer, word_counter
 from src.analysis.statistics import calculate_metrics, calculate_tfidf
-from src.classification.model import classificador, plot_classification
+from src.classification.model import classificador, create_plotly_visualization, create_radar_chart
 from src.analysis.visualization import plot_metrics, generate_wordcloud, plot_tfidf, plot_word_frequency
 from src.question.question import load_qa_pipeline
+from src.summarization.summarizer import load_summarizer_pipeline
 # from src.representation import bow, cooccurrence
 
 st.set_page_config(layout="wide")
+
+LABELS_MAP_PT = {
+    'Other': 'Outro',
+    'Information/Explanation': 'Informativo/Explicativo',
+    'News': 'Notícia',
+    'Instruction': 'Instrução',
+    'Opinion/Argumentation': 'Opinião/Argumentação',
+    'Forum': 'Fórum',
+    'Prose/Lyrical': 'Prosa/Lírico',
+    'Legal': 'Jurídico',
+    'Promotion': 'Promocional'
+} 
 
 def process_large_file(uploaded_file, chunk_size=1024*1024):  # 1MB chunks
     """ Processa arquivos grandes em chunks"""
@@ -132,61 +145,161 @@ def handle_viz_selection(viz_name):
     st.session_state.tab = "Visualizações"
 
 def render_classification_section(tokens):
-    """Renderiza a seção de classificação no Streamlit"""
+    """Renderiza a seção de classificação no Streamlit com visualizações aprimoradas."""
     st.subheader("Classificação do Texto")
     
-    # Texto de explicação
+
     st.markdown("""
-    Essa seção utiliza modelos de aprendizado profundo (BERT e RoBERTa) para classificar o texto em:
+    Essa seção utiliza modelos de aprendizado profundo (XLM-RoBERTa) para classificar o texto quanto ao seu gênero textual.
     
-    1. **Gênero textual**: Identifica o tipo/formato do texto
-    
-    Os resultados abaixo mostram os gêneros mais prováveis, junto com o nível de confiança da classificação.
+    Os resultados abaixo mostram os gêneros mais prováveis detectados no texto, junto com o nível de confiança da classificação.
     """)
     
     with st.spinner('Realizando classificação do texto... Isso pode levar alguns segundos.'):
-
         texto_completo = " ".join(tokens)
         texto_para_classificacao = texto_completo[:min(len(texto_completo), 512)]
         
-        genero = classificador(texto_para_classificacao)
+        genero_results = classificador(texto_para_classificacao)
         
-        if genero and isinstance(genero, list) and len(genero) > 0:
-            # informações principais com valores
-            genero_mapeado = {
-                        "Promotion": "Promoção",
-                        "Information": "Informativo",
-                        "News": "Notícia",
-                        "Forum": "Fórum",
-                        "Review": "Resenha"
-                    }
-                
-
-            st.info(f"**Gênero Textual:** {genero_mapeado.get(genero[0]['label'], genero[0]['label'])}")
-            st.progress(genero[0]['score'])
+        if genero_results and isinstance(genero_results, list) and len(genero_results) > 0:
+    
+            genero_principal = genero_results[0]
+            genero_nome_pt = LABELS_MAP_PT.get(genero_principal['label'], genero_principal['label'])
+            
+            st.success(f"**Gênero Textual Principal:** {genero_nome_pt}")
+            st.progress(genero_principal['score'])
+            st.caption(f"Confiança: {genero_principal['score']:.1%}")
+            
+            # adicionar descrição do gênero detectado
+            st.markdown(f"""
+            ### Sobre o gênero "{genero_nome_pt}":
+            {get_genre_description(genero_nome_pt)}
+            """)
             
             st.divider()
-            fig = plot_classification(genero)
-            if fig:
-                st.pyplot(fig)
+            
+            # visualização em barras horizontais com Plotly
+            st.subheader("Distribuição de Confiança por Gênero")
+            bar_fig = create_plotly_visualization(genero_results)
+            if bar_fig:
+                st.plotly_chart(bar_fig, use_container_width=True)
+            
+            # visualização em radar
+            radar_fig = create_radar_chart(genero_results)
+            if radar_fig:
+                st.plotly_chart(radar_fig, use_container_width=True)
                 
-            with st.expander("Sobre gêneros textuais"):
+            with st.expander("Sobre os gêneros textuais"):
                 st.markdown("""
-                        #### Gêneros Textuais Detectados
+                ### Descrição dos Gêneros Textuais
 
-                        - **Notícia**: Conteúdos jornalísticos objetivos e informativos.
-                        - **Informativo**: Textos que visam informar ou instruir, como manuais e comunicados.
-                        - **Promoção**: Textos com intenção comercial ou publicitária.
-                        - **Fórum**: Conteúdos com linguagem mais informal, típicos de fóruns online e discussões.
-                        - **Resenha**: Análises ou avaliações de produtos, serviços ou obras culturais.
-                        """)
+                - **Informativo/Explicativo**: Textos que transmitem conhecimento ou explicam conceitos, processos, fenômenos.
+                - **Notícia**: Conteúdos jornalísticos objetivos que relatam fatos recentes de interesse público.
+                - **Instrução**: Textos que ensinam procedimentos, como manuais, tutoriais e receitas.
+                - **Opinião/Argumentação**: Textos que apresentam posicionamentos e argumentos para defender uma ideia.
+                - **Fórum**: Conteúdos de discussão, típicos de ambientes online com interação entre vários participantes.
+                - **Prosa/Lírico**: Textos literários ou poéticos, com linguagem elaborada e função estética.
+                - **Jurídico**: Documentos legais como contratos, leis, regulamentos e termos de uso.
+                - **Promocional**: Textos publicitários ou de marketing que visam promover produtos, serviços ou ideias.
+                - **Outro**: Textos que não se encaixam claramente nas categorias acima.
+                """)
         else:
             st.warning("Não foi possível classificar o texto. Verifique se o texto possui conteúdo suficiente ou tente novamente.")
     
-    # marcador para futura implementação de sumarização
     st.divider()
     st.subheader("Sumarização do Texto")
-    st.info("A funcionalidade de sumarização automática será implementada em breve. Essa ferramenta gerará um resumo conciso do texto analisado, destacando os pontos mais relevantes.") 
+    
+    if st.button("Gerar Resumo"):
+        with st.spinner("Gerando resumo..."):
+            try:
+                summarizer = load_summarizer_pipeline()
+                # preparando a entrada para o formato esperado pelo modelo
+                input_text = f"Resumir: {texto_completo}"
+                # gerando o resumo
+                summary_result = summarizer(
+                input_text, 
+                max_new_tokens=150,  
+                do_sample=True, 
+                top_p=0.95,
+                truncation=True  
+            )
+            
+
+                generated_text = summary_result[0]['generated_text']
+    
+                if "Resumir: " in generated_text:
+                    resumo = generated_text.split("Resumir: ")[1]
+    
+                    if resumo.startswith(texto_completo):
+                        resumo = resumo[len(texto_completo):].strip()
+                    st.write(resumo)
+                else:
+                    st.write(generated_text)
+                    
+            except Exception as e:
+                 st.error(f"Erro ao gerar resumo: {str(e)}")
+         
+
+def get_genre_description(genre_name):
+    """Retorna uma descrição detalhada para o gênero textual específico."""
+    descriptions = {
+        'Informativo/Explicativo': """
+        Textos informativos ou explicativos têm como objetivo principal transmitir conhecimento de forma clara e objetiva. 
+        Esses textos geralmente apresentam fatos, conceitos, definições ou explicações sobre determinado assunto, 
+        utilizando linguagem objetiva e precisão técnica. Exemplos incluem artigos científicos, enciclopédias, 
+        textos didáticos e reportagens aprofundadas.
+        """,
+        
+        'Notícia': """
+        Textos jornalísticos que relatam acontecimentos recentes considerados relevantes para a sociedade. 
+        São caracterizados pela objetividade, concisão e estrutura que privilegia as informações mais importantes 
+        no início (pirâmide invertida). Respondem às perguntas essenciais: o quê, quem, quando, onde, como e por quê.
+        """,
+        
+        'Instrução': """
+        Textos que orientam o leitor sobre como realizar uma tarefa ou procedimento específico. 
+        Apresentam linguagem direta, uso de verbos no imperativo ou infinitivo, e frequentemente incluem 
+        elementos visuais como diagramas ou imagens. Exemplos incluem manuais de instruções, receitas culinárias, 
+        tutoriais e guias passo a passo.
+        """,
+        
+        'Opinião/Argumentação': """
+        Textos que apresentam um ponto de vista sobre determinado tema e desenvolvem argumentos para sustentá-lo. 
+        Utilizam técnicas de persuasão, evidências, exemplos e raciocínio lógico para convencer o leitor. 
+        Incluem artigos de opinião, editoriais, resenhas críticas, ensaios argumentativos e manifestos.
+        """,
+        
+        'Fórum': """
+        Textos produzidos em ambientes de discussão coletiva, caracterizados pela interação entre múltiplos 
+        participantes. Apresentam linguagem mais informal, referências diretas a outros comentários, 
+        e estrutura não-linear. Comuns em plataformas online como Reddit, Quora e grupos de discussão.
+        """,
+        
+        'Prosa/Lírico': """
+        Textos literários que privilegiam a função estética da linguagem. A prosa narrativa conta histórias 
+        por meio de personagens, enredo, tempo e espaço. Já os textos líricos expressam emoções e sentimentos 
+        com linguagem subjetiva e recursos como metáforas, rimas e ritmo. Inclui romances, contos, poemas e crônicas.
+        """,
+        
+        'Jurídico': """
+        Textos que tratam de questões legais e normativas, caracterizados pelo uso de linguagem técnica, 
+        terminologia específica e estrutura formal. São altamente padronizados e precisos. 
+        Exemplos incluem contratos, leis, regimentos, estatutos, processos judiciais e pareceres jurídicos.
+        """,
+        
+        'Promocional': """
+        Textos com finalidade persuasiva comercial, que visam promover produtos, serviços, marcas ou ideias. 
+        Utilizam linguagem apelativa, recursos persuasivos e chamadas à ação. Exemplos incluem anúncios publicitários, 
+        material de marketing, descrições de produtos e publicações promocionais em redes sociais.
+        """,
+        
+        'Outro': """
+        Textos que não se enquadram claramente nas categorias principais ou que combinam características 
+        de múltiplos gêneros. Podem ser textos experimentais, híbridos ou de natureza específica para contextos particulares.
+        """
+    }
+    
+    return descriptions.get(genre_name, "Não há descrição detalhada disponível para esse gênero.")
 
 def render_question(text_input):
     st.title("Perguntas Interpretativas sobre o Texto")
@@ -196,8 +309,11 @@ def render_question(text_input):
     if question:
         qa_pipeline = load_qa_pipeline()
         try:
+
             inputs = f"pergunta: {question} contexto: {text_input}"
-            result = qa_pipeline(inputs)
+          
+            result = qa_pipeline(inputs, max_length=100)
+            
             st.subheader("Resposta:")
             st.write(result[0]['generated_text'])
         except Exception as e:
