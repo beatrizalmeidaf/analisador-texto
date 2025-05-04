@@ -4,5 +4,10 @@ pandas
 matplotlib
 transformers
 tf-keras
+together
+python-dotenv
+pillow==10.4.0
+typer==0.12.5
+numpy==1.26.4
 
 #maritaca-ai/sabia-7b

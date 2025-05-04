@@ -10,10 +10,10 @@ sys.path.append(root_dir)
 from src.preprocessing.cleaner import clean_text
 from src.preprocessing.tokenizer import tokenizer, word_counter
 from src.analysis.statistics import calculate_metrics, calculate_tfidf
-from src.classification.model import classificador, create_plotly_visualization, create_radar_chart
+from src.classification.model import classificador, create_plotly_visualization
 from src.analysis.visualization import plot_metrics, generate_wordcloud, plot_tfidf, plot_word_frequency
 from src.question.question import load_qa_pipeline
-from src.summarization.summarizer import load_summarizer_pipeline
+from src.summarization.summarizer import load_summarizer
 # from src.representation import bow, cooccurrence
 
 st.set_page_config(layout="wide")
@@ -185,9 +185,9 @@ def render_classification_section(tokens):
                 st.plotly_chart(bar_fig, use_container_width=True)
             
             # visualização em radar
-            radar_fig = create_radar_chart(genero_results)
-            if radar_fig:
-                st.plotly_chart(radar_fig, use_container_width=True)
+            #radar_fig = create_radar_chart(genero_results)
+            #if radar_fig:
+             #   st.plotly_chart(radar_fig, use_container_width=True)
                 
             with st.expander("Sobre os gêneros textuais"):
                 st.markdown("""
@@ -212,32 +212,14 @@ def render_classification_section(tokens):
     if st.button("Gerar Resumo"):
         with st.spinner("Gerando resumo..."):
             try:
-                summarizer = load_summarizer_pipeline()
-                # preparando a entrada para o formato esperado pelo modelo
-                input_text = f"Resumir: {texto_completo}"
-                # gerando o resumo
-                summary_result = summarizer(
-                input_text, 
-                max_new_tokens=150,  
-                do_sample=True, 
-                top_p=0.95,
-                truncation=True  
-            )
-            
+                # Carrega a função de sumarização
+                resumo = load_summarizer(texto_completo)
 
-                generated_text = summary_result[0]['generated_text']
-    
-                if "Resumir: " in generated_text:
-                    resumo = generated_text.split("Resumir: ")[1]
-    
-                    if resumo.startswith(texto_completo):
-                        resumo = resumo[len(texto_completo):].strip()
-                    st.write(resumo)
-                else:
-                    st.write(generated_text)
-                    
+                st.write(resumo)
+
             except Exception as e:
-                 st.error(f"Erro ao gerar resumo: {str(e)}")
+                st.error(f"Erro ao gerar resumo: {str(e)}")
+
          
 
 def get_genre_description(genre_name):
