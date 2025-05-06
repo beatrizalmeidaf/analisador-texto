@@ -7,8 +7,6 @@
 O **Analisador Inteligente de Texto** é uma ferramenta robusta para processamento e análise textual. Utilizando técnicas de Processamento de Linguagem Natural (NLP), estatística e aprendizado de máquina, a aplicação permite extrair informações relevantes de textos em diversos formatos e contextos.
 
 
----
-
 ## **Objetivo do Projeto**
 
 Desenvolver um analisador textual completo que combine métodos analíticos tradicionais e inteligência artificial para atender a diferentes necessidades de análise textual, como:
@@ -70,7 +68,7 @@ A ferramenta está composta pelos seguintes módulos:
   - Processamento de textos longos (notícias, relatórios).  
   - Geração de resumos utilizando técnicas baseadas em NLP modernas.  
 - **Tecnologias Usadas**: `sumy`, `transformers`.  
-- 
+  
 ---
 
 ## **Casos de Uso**
