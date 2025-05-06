@@ -1,15 +1,3 @@
-========== PÁGINA 1 ==========
-
-========== PÁGINA 2 ==========
-
-========== PÁGINA 3 ==========
-
-========== PÁGINA 4 ==========
-
-========== PÁGINA 5 ==========
-
-========== PÁGINA 6 ==========
-
 Lista de Abreviaturas
 
 BERT
@@ -46,7 +34,8 @@ LLM Large Language Models - Grandes Modelos de Linguagem
 
 LSTM Long Short-Term Memory - Memória de Longo Prazo
 
-========== PÁGINA 7 ==========
+
+
 
 MPT
 MosaicML Pretrained Transformer
@@ -66,145 +55,149 @@ RNN Recurrent Neural Networks - Redes Neurais Recorrentes
 
 TF-IDF Term Frequency - Inverse Document Frequency
 
-========== PÁGINA 8 ==========
+
+
 
 Lista de Figuras
 
-Figura 1 - Arquiteturas e técnicas de Processamento de Linguagem Natural	 14
+Figura 1 - Arquiteturas e técnicas de Processamento de Linguagem Natural
 
-Figura 2 - Arquitetura transformers	 18
+Figura 2 - Arquitetura transformers
 
-Figura 3 - Resumo de Processamento de Linguagem Natural	 18
+Figura 3 - Resumo de Processamento de Linguagem Natural
 
-Figura 4 - Principais técnicas utilizadas em Processamento de Linguagem Natural	 22
+Figura 4 - Principais técnicas utilizadas em Processamento de Linguagem Natural
 
-Figura 5 - Exemplo de análise de sentimentos	 28
+Figura 5 - Exemplo de análise de sentimentos
 
-Figura 6 - Exemplo de identificação de stop words em uma frase	 31
+Figura 6 - Exemplo de identificação de stop words em uma frase
 
-Figura 7 - Reconhecimento de entidades nomeadas (NER)	 32
+Figura 7 - Reconhecimento de entidades nomeadas (NER)
 
-Figura 8 - Retorno de informações (IR)	 33
+Figura 8 - Retorno de informações (IR)
 
-Figura 9 - Exemplo de sumarização de documentos utilizando o ChatGPT®	 35
+Figura 9 - Exemplo de sumarização de documentos utilizando o ChatGPT®
 
-Figura 10 - Assistentes virtuais - chatbots	 37
+Figura 10 - Assistentes virtuais - chatbots
 
-========== PÁGINA 9 ==========
+
+
 
 Sumário
 
-Apresentação	 11
+Apresentação
 
 Unidade I - Introdução à Linguagem Natural e ao Processamento de Lin-	  
-	           guagem Natural	 12
+	           guagem Natural
 
-	 1.1 Visão geral da Linguagem Natural	 13
+	 1.1 Visão geral da Linguagem Natural
 
      	 1.2 Visão Geral do Processamento de Linguagem Natural (NLP), Termos-	  
-	       chave e Conceitos Fundamentais	 14
+	       chave e Conceitos Fundamentais
 
-Unidade II - Principais Técnicas em Processamento de Linguagem Natural	 20
+Unidade II - Principais Técnicas em Processamento de Linguagem Natural
 
-	 2.1 Principais Técnicas Utilizadas em NLP	 21
+	 2.1 Principais Técnicas Utilizadas em NLP
 
-		  2.1.1 Tokenização	 22
+		  2.1.1 Tokenização
 
-		  2.1.2 Remoção de Stop Words	 22
+		  2.1.2 Remoção de Stop Words
 
-		  2.1.3 Stemming e Lematização	 22
+		  2.1.3 Stemming e Lematização
 
-		  2.1.4 Parsing e Análise Sintática	 23
+		  2.1.4 Parsing e Análise Sintática
 
-		  2.1.5 Word Embeddings	 23
+		  2.1.5 Word Embeddings
 
-		  2.1.6 Modelagem de Linguagem	 23
+		  2.1.6 Modelagem de Linguagem
 
-	 2.2 Demonstração da aplicação prática das técnicas em NLP	 23
+	 2.2 Demonstração da aplicação prática das técnicas em NLP
 
-		  2.2.1 Tokenização	 24
+		  2.2.1 Tokenização
 
-		  2.2.2 Remoção de Stop Words	 24
+		  2.2.2 Remoção de Stop Words
 
-		  2.2.3 Stemming e Lematização	 24
+		  2.2.3 Stemming e Lematização
 
-		  2.2.4 Parsing e Análise Sintática	 25
+		  2.2.4 Parsing e Análise Sintática
 
-		  2.2.5 Word Embeddings	 25
+		  2.2.5 Word Embeddings
 
-		  2.2.6 Modelagem de Linguagem	 25
+		  2.2.6 Modelagem de Linguagem
 
 Unidade III - Problemas Comuns Resolvidos com Processamento de Lin-	  
-		    guagem Natural	 27
+		    guagem Natural
 
-	 3.1 Análise de Sentimentos	 28
+	 3.1 Análise de Sentimentos
 
-	 3.2 Reconhecimento de Entidades Nomeadas (NER)	 29
+	 3.2 Reconhecimento de Entidades Nomeadas (NER)
 
-========== PÁGINA 10 ==========
 
-	 3.3 Retorno de Informações	 32
 
-	 3.4 Sumarização de Documentos	 34
 
-	 3.5 Assistentes Virtuais - Chatbots	 36
+	 3.3 Retorno de Informações
 
-Unidade IV - Desafios Éticos em Processamento de Linguagem Natural	 40
+	 3.4 Sumarização de Documentos
 
-	 4.1 Principais Desafios em NLP	 41
+	 3.5 Assistentes Virtuais - Chatbots
 
-		  4.1.1 Privacidade e Segurança de Dados	 41
+Unidade IV - Desafios Éticos em Processamento de Linguagem Natural
 
-		  4.1.2 Viés e Discriminação	 42
+	 4.1 Principais Desafios em NLP
 
-		  4.1.3 Manipulação e Desinformação	 42
+		  4.1.1 Privacidade e Segurança de Dados
 
-		  4.1.4 Transparência e Explicabilidade	 42
+		  4.1.2 Viés e Discriminação
 
-		  4.1.5 Uso Ético e Responsável	 43
+		  4.1.3 Manipulação e Desinformação
+
+		  4.1.4 Transparência e Explicabilidade
+
+		  4.1.5 Uso Ético e Responsável
 
 	 4.2 Análise dos Desafios Éticos e Sociais Associados ao Desenvolvimen-	  
-	        to e à Aplicação de Tecnologias de NLP	 43
+	        to e à Aplicação de Tecnologias de NLP
 
-		  4.2.1 Privacidade e Segurança de Dados	 43
+		  4.2.1 Privacidade e Segurança de Dados
 
-		  4.2.2 Viés e Discriminação	 43
+		  4.2.2 Viés e Discriminação
 
-		  4.2.3 Manipulação e Desinformação	 44
+		  4.2.3 Manipulação e Desinformação
 
-		  4.2.4 Transparência e Explicabilidade	 44
+		  4.2.4 Transparência e Explicabilidade
 
-		  4.2.5 Uso Ético e Responsável	 44
+		  4.2.5 Uso Ético e Responsável
 
-Unidade V - Problemas em Aberto e Resumo	 46
+Unidade V - Problemas em Aberto e Resumo
 
-	 5.1 Modelos de Linguagem	 47
+	 5.1 Modelos de Linguagem
 
-	 5.2 Análise de Sentimentos	 48
+	 5.2 Análise de Sentimentos
 
-	 5.3 Reconhecimento de Entidades Nomeadas (NER)	 49
+	 5.3 Reconhecimento de Entidades Nomeadas (NER)
 
-	 5.4 Assistentes Virtuais e Chatbots	 49
+	 5.4 Assistentes Virtuais e Chatbots
 
-Unidade VI - Encerramento	 51
+Unidade VI - Encerramento
 
-	 6.1 Revisão dos Conceitos Fundamentais	 52
+	 6.1 Revisão dos Conceitos Fundamentais
 
-	 6.2 Principais Técnicas de NLP	 52
+	 6.2 Principais Técnicas de NLP
 
-	 6.3 Aplicações Práticas	 53
+	 6.3 Aplicações Práticas
 
-	 6.4 Desafios Éticos	 53
+	 6.4 Desafios Éticos
 
-	 6.5 Conclusão	 53
+	 6.5 Conclusão
 
-	 6.6 Reflexão Final	 54
+	 6.6 Reflexão Final
 
-Referências	 54
+Referências
 
-Saiba Mais…	 58
+Saiba Mais…
 
-========== PÁGINA 11 ==========
+
+
 
 Apresentação
 
@@ -226,9 +219,11 @@ os diferentes  contextos e problemas para os quais NLP pode ser utilizado.
 
 Desejamos um excelente estudo!!!
 
-========== PÁGINA 12 ==========
 
-========== PÁGINA 13 ==========
+
+
+
+
 
 Unidade I - Introdução à Linguagem Natural e ao Pro-
 cessamento de Linguagem Natural
@@ -271,7 +266,8 @@ Um outro ponto importante da linguagem natural é a pragmática, que explora com
 o contexto afeta o entendimento das palavras. Isso significa que uma mesma frase pode 
 ser interpretada de maneiras diferentes dependendo da situação em que é usada. Esse 
 
-========== PÁGINA 14 ==========
+
+
 
 campo mostra como a linguagem se ajusta para atender às diferentes necessidades de 
 comunicação das pessoas em variados contextos.
@@ -310,7 +306,8 @@ foram utilizadas outras arquiteturas e técnicas nesses problemas, exemplificada
 
 Fonte: autoria própria.
 
-========== PÁGINA 15 ==========
+
+
 
 Bag of Words - Técnica que representa documentos como vetores, ignorando a 
 estrutura e a ordem das palavras, e focando apenas na frequência de ocorrência das 
@@ -357,7 +354,8 @@ longas de dados. Para contornar essa limitação, surgiram variantes de RNNs, co
 Long Short-Term Memory (LSTM) e Gated Recurrent Units (GRU), que foram projetadas 
 para capturar dependências de longo prazo de forma mais eficaz.
 
-========== PÁGINA 16 ==========
+
+
 
 LSTM - É uma arquitetura especial de RNN que foi projetada para resolver os problemas 
 matemáticos complexos das RNNs tradicionais, permitindo que as redes capturem 
@@ -407,7 +405,8 @@ uma parte da sentença enquanto se ignora o resto temporariamente. Isso é semel
 à maneira como os humanos se concentram em informações pertinentes enquanto 
 ignoram o irrelevante.
 
-========== PÁGINA 17 ==========
+
+
 
 O mecanismo de atenção geralmente calcula pesos para diferentes partes da entrada, 
 indicando quão importantes elas são para uma tarefa específica. Esses pesos são então 
@@ -448,7 +447,8 @@ anos. Essa arquitetura é usada para criar Grandes Modelos de Linguagem (LLMs), 
 ChatGPT®, que é um dos mais conhecidos. O ChatGPT® utiliza essa estrutura nas diferentes 
 versões do modelo GPT.
 
-========== PÁGINA 18 ==========
+
+
 
 Figura 2 - Arquitetura transformers
 
@@ -461,7 +461,8 @@ Figura 3 - Resumo de Processamento de Linguagem Natural
 
 Fonte: autoria própria.
 
-========== PÁGINA 19 ==========
+
+
 
 Saiba mais…
 
@@ -475,9 +476,11 @@ Saiba mais…
 
 	» Um breve estudo dos Transformers (Alves, 2022).
 
-========== PÁGINA 20 ==========
 
-========== PÁGINA 21 ==========
+
+
+
+
 
 Unidade II - Principais Técnicas em Processamento de 
 Linguagem Natural
@@ -507,7 +510,8 @@ volumes de dados para realizar uma ampla gama de tarefas de NLP. Juntas, essas t
 formam a base das aplicações modernas em NLP, proporcionando ferramentas poderosas 
 para a análise e geração da linguagem natural.
 
-========== PÁGINA 22 ==========
+
+
 
 Figura 4 - Principais técnicas utilizadas em Processamento de Linguagem Natural
 
@@ -539,7 +543,8 @@ formas básicas ou raízes. Ambas ajudam a normalizar o texto, tornando mais fá
 os algoritmos entenderem o significado das palavras. Stemming é o processo de cortar 
 o final ou os afixos de palavras para reduzir variantes de uma palavra à sua raiz ou “stem”. 
 
-========== PÁGINA 23 ==========
+
+
 
 Por exemplo, as palavras “correndo”, “corre” e “corrida” podem ser reduzidas à raiz “corr”. 
 Lematização é o processo de transformar palavras na sua forma base ou dicionária, 
@@ -586,7 +591,8 @@ Nesta seção, as principais técnicas utilizadas em NLP serão demonstradas de 
 prática para tangibilizar o conhecimento e facilitar o entendimento. A tokenização será 
 abordada, mostrando como dividir textos em unidades menores, como palavras e frases. 
 
-========== PÁGINA 24 ==========
+
+
 
 A remoção de stop words será exemplificada, explicando como eliminar palavras comuns 
 que pouco agregam ao significado do texto. Técnicas de stemming e lematização serão 
@@ -630,7 +636,8 @@ variações morfológicas sejam tratadas como equivalentes. Se um usuário pesqu
 “correndo”, o sistema aplica stemming ou lematização para reduzir a palavra à sua raiz ou 
 forma base, “correr”. Isso permite que o motor de busca retorne resultados que contenham 
 
-========== PÁGINA 25 ==========
+
+
 
 “correr”, “correu”, “corrida”, entre outras variações, garantindo uma cobertura mais ampla 
 e precisa dos documentos relevantes, melhorando significativamente a experiência do 
@@ -673,7 +680,8 @@ tocar uma música. A modelagem de linguagem permite que esses assistentes entend
 nuances, sinônimos e a estrutura da linguagem humana, oferecendo interações mais 
 naturais e eficientes.
 
-========== PÁGINA 26 ==========
+
+
 
 Saiba mais…
 
@@ -688,9 +696,11 @@ spaCy e NLP — Parte 3 (Surreaux, 2024).
 	» Word Embeddings — Representação vetorial de textos para Machine Learning 
 (Technology and Artificial Intelligence League - TAIL, 2020) 
 
-========== PÁGINA 27 ==========
 
-========== PÁGINA 28 ==========
+
+
+
+
 
 Unidade III - Problemas Comuns Resolvidos com Pro-
 cessamento de Linguagem Natural
@@ -728,7 +738,8 @@ Figura 5 - Exemplo de análise de sentimentos
 
 Fonte: autoria própria.
 
-========== PÁGINA 29 ==========
+
+
 
 Uma excelente aplicação da análise de sentimentos é em uma plataforma de comércio 
 eletrônico que vende uma ampla variedade de produtos, desde eletrônicos até vestuário. 
@@ -781,7 +792,8 @@ No atendimento ao cliente, o NER pode identificar produtos e datas em reclamaç�
 automatizando a categorização e priorização de problemas. Na pesquisa acadêmica, a 
 técnica é utilizada para extrair nomes de autores, instituições e publicações de textos 
 
-========== PÁGINA 30 ==========
+
+
 
 científicos, facilitando a indexação e busca de informações. Por fim, em aplicações 
 financeiras, o NER permite identificar valores monetários e datas em relatórios, permitindo 
@@ -834,7 +846,8 @@ para processar sinistros, permitindo uma resposta mais rápida aos clientes;
 	» Aprimoramento da qualidade do atendimento: acesso rápido e preciso às 
 informações relevantes melhora a satisfação do cliente e a experiência geral;
 
-========== PÁGINA 31 ==========
+
+
 
 	» Redução de fraudes: identificação de padrões suspeitos e de inconsistências 
 nos sinistros ajuda a prevenir fraudes, economizando recursos;
@@ -876,7 +889,8 @@ classificação das entidades. Por exemplo, em «João foi à escola com Maria»
 «foi à com» deixa «João escola Maria», tornando mais claro que «João» e «Maria» são nomes 
 de pessoas e «escola» é um possível local.
 
-========== PÁGINA 32 ==========
+
+
 
 Em resumo, a remoção de stop words é uma técnica simples, mas poderosa no 
 pré-processamento de texto que pode melhorar significativamente o desempenho do 
@@ -896,7 +910,8 @@ para uma necessidade de informação a partir de um grande repositório de dados
 uma biblioteca digital ou a internet. A tarefa de IR é fundamental em diversos contextos, 
 incluindo motores de busca na web, sistemas de recomendação e bibliotecas digitais.
 
-========== PÁGINA 33 ==========
+
+
 
 Figura 8 - Retorno de informações (IR)
 
@@ -924,7 +939,8 @@ consulta do usuário. Produtos com alta relevância aparecem no topo da lista. A
 dos resultados são apresentados ao usuário, frequentemente com trechos das descrições 
 que destacam as palavras-chave encontradas e avaliações dos clientes.
 
-========== PÁGINA 34 ==========
+
+
 
 Quando um usuário realiza uma busca, o algoritmo de stemming, citado na seção 2.3, 
 reduz todas as palavras na consulta e no índice de documentos às suas raízes. Isso ajuda 
@@ -955,7 +971,8 @@ ideias principais do texto original sem perder seu significado. A sumarização 
 utilizada em diversas áreas, como notícias, pesquisa acadêmica e atendimento ao cliente, 
 para facilitar a rápida compreensão de grandes volumes de texto.
 
-========== PÁGINA 35 ==========
+
+
 
 Figura 9 - Exemplo de sumarização de documentos utilizando o ChatGPT®
 
@@ -982,7 +999,8 @@ resumos de artigos científicos para ajudar pesquisadores a identificarem rapida
 trabalhos relevantes. No atendimento ao cliente, é possível gerar resumos de longos 
 e-mails ou transcrições de chamadas para facilitar a rápida resposta a consultas dos 
 
-========== PÁGINA 36 ==========
+
+
 
 clientes. E por fim, na gestão de documentos, é possível realizar análise das informações 
 com a criação de resumos de relatórios extensos para que executivos e gerentes possam 
@@ -1033,7 +1051,8 @@ técnicos e guiar os clientes por meio de processos de atendimento. Isso permite
 redução de tempo de espera e melhoria na eficiência do atendimento. Outro exemplo, são 
 os assistentes pessoais, que ajudam os usuários a realizar tarefas cotidianas, como definir 
 
-========== PÁGINA 37 ==========
+
+
 
 lembretes, tocar música e controlar dispositivos domésticos inteligentes, fazendo com 
 que haja um aumento da conveniência e automação de tarefas diárias. As plataformas 
@@ -1069,7 +1088,8 @@ atendimento;
 	» Atendimento 24/7: disponibilidade constante para responder a consultas e 
 resolver problemas, independentemente do horário;
 
-========== PÁGINA 38 ==========
+
+
 
 	» Respostas imediatas: o chatbot oferece respostas rápidas e precisas, 
 reduzindo o tempo de espera e melhorando a experiência do cliente;
@@ -1119,7 +1139,8 @@ para formar uma frase coerente e compreensível para o usuário. Esse ciclo de t
 e processamento é contínuo, permitindo que o chatbot mantenha conversas fluidas e 
 relevantes.
 
-========== PÁGINA 39 ==========
+
+
 
 Em suma, a tokenização facilita a compreensão e a geração de texto pelos modelos de 
 linguagem em assistentes virtuais e chatbots, dividindo o texto em partes menores que 
@@ -1140,9 +1161,11 @@ automática de textos (Lima, 2017)
 
 	» Chatbots e Assistentes Virtuais Inteligentes: por onde começar? (Rocha, 2017)
 
-========== PÁGINA 40 ==========
 
-========== PÁGINA 41 ==========
+
+
+
+
 
 Unidade IV - Desafios Éticos em Processamento de Lin-
 guagem Natural
@@ -1184,7 +1207,8 @@ utilização de seus dados;
 	» Armazenamento seguro: implementar práticas de armazenamento seguro 
 para prevenir vazamentos de dados.
 
-========== PÁGINA 42 ==========
+
+
 
 4.1.2 Viés e Discriminação
 
@@ -1233,7 +1257,8 @@ transparentes e suas decisões mais compreensíveis para os usuários;
 	» Justificativas para decisões: fornecer justificativas claras e compreensíveis 
 para as decisões tomadas pelos modelos de NLP.
 
-========== PÁGINA 43 ==========
+
+
 
 4.1.5 Uso Ético e Responsável
 
@@ -1281,7 +1306,8 @@ Os modelos de NLP são treinados em grandes corporações de texto que refletem
 o uso real da linguagem, incluindo seus preconceitos e estereótipos. Como resultado, 
 esses modelos podem aprender e perpetuar vieses existentes, levando a decisões 
 
-========== PÁGINA 44 ==========
+
+
 
 discriminatórias. Por exemplo, um modelo de NLP pode gerar respostas enviesadas 
 contra determinados grupos demográficos se os dados de treinamento contiverem tais 
@@ -1328,7 +1354,8 @@ métodos utilizados no treinamento dos modelos.
 Finalmente, o uso ético e responsável das tecnologias de NLP envolve garantir que essas 
 ferramentas sejam desenvolvidas e aplicadas de maneira a beneficiar a sociedade como 
 
-========== PÁGINA 45 ==========
+
+
 
 um todo, minimizando danos potenciais. Isso inclui considerar os impactos sociais e éticos 
 durante todas as fases do desenvolvimento, desde a concepção até a implementação e 
@@ -1348,9 +1375,11 @@ natural: construindo um futuro responsável (Santos, 2024).
 	» Explorando a interseção entre processamento de linguagem natural e ética: o 
 caminho para uma IA responsável (Santos, 2023).
 
-========== PÁGINA 46 ==========
 
-========== PÁGINA 47 ==========
+
+
+
+
 
 Unidade V - Problemas em Aberto e Resumo
 
@@ -1394,7 +1423,8 @@ mitigação de vieses em modelos de linguagem é um problema crítico em
 aberto. É necessário desenvolver técnicas que não apenas detectem vieses, 
 mas também ajustem os modelos para redução desses efeitos.
 
-========== PÁGINA 48 ==========
+
+
 
 	» Explicabilidade e transparência - A maioria dos modelos de linguagem 
 modernos, especialmente aqueles baseados em deep learning, é considerada 
@@ -1442,7 +1472,8 @@ funcionem eficientemente em múltiplos idiomas e que possam lidar com
 textos multilíngues de maneira eficaz. Isso inclui a necessidade de grandes 
 corpora, anotados em diferentes idiomas para treinamento.
 
-========== PÁGINA 49 ==========
+
+
 
 5.3 Reconhecimento de Entidades Nomeadas (NER)
 
@@ -1492,7 +1523,8 @@ para compreender e resolver ambiguidades nas consultas dos usuários. Isso
 inclui entender intenções vagas ou múltiplas, interpretar perguntas mal 
 formuladas e lidar com respostas ambíguas. Criar sistemas que possam lidar 
 
-========== PÁGINA 50 ==========
+
+
 
 eficazmente com essas ambiguidades é essencial para melhorar a interação e 
 a satisfação do usuário.
@@ -1529,9 +1561,13 @@ applications and challenges (Pakhale, 2023).
 
 	» Conversational AI: a survey (Bhagia et al., 2024). 
 
-========== PÁGINA 51 ==========
+ 
 
-========== PÁGINA 52 ==========
+
+
+
+
+
 
 Unidade VI - Encerramento
 
@@ -1569,7 +1605,8 @@ capturam significados contextuais;
 	» Modelagem de linguagem: criação de modelos que entendem e geram texto 
 coerente em linguagem natural.
 
-========== PÁGINA 53 ==========
+
+
 
 6.3 Aplicações Práticas
 
@@ -1619,7 +1656,8 @@ maneira como interagimos com a tecnologia e a informação. As técnicas e desaf
 abordados nesse ebook ilustram tanto o potencial quanto a responsabilidade envolvidos 
 no desenvolvimento de sistemas de NLP.
 
-========== PÁGINA 54 ==========
+
+
 
 Esperamos que este ebook tenha proporcionado uma compreensão profunda e 
 prática das principais técnicas de NLP e dos desafios associados. O conhecimento 
@@ -1672,7 +1710,8 @@ org/news/an-introduction-to-bag-of-words-and-how-to-code-it-in-python-for-nlp-
 
 282e87a9da04/. Acesso em: 16 jul. 2024.
 
-========== PÁGINA 55 ==========
+
+
 
 FONSECA, C.. Word Embedding: fazendo o computador entender o significado das palavras 
 
@@ -1731,7 +1770,8 @@ um-sumariza%C3%A7%C3%A3o-autom%C3%A1tica-de-textos-775cb428c84e. Acesso
 
 em: 16 jul. 2024.
 
-========== PÁGINA 56 ==========
+
+
 
 MIKOLOV, T.; CHEN, K.; CORRADO, G.; DEAN, J.. Efficient estimation of word representations 
 
@@ -1782,7 +1822,8 @@ Processing (EMNLP). Doha, Qatar. 2014, p. 1532-1543. doi: 10.3115/v1/D14-1162. A
 
 16 jul. 2024.
 
-========== PÁGINA 57 ==========
+
+
 
 PYKES, K.. Stemming e lematização em Python [Internet]. DataCamp Inc.. 2024. Disponível 
 
@@ -1839,7 +1880,8 @@ natural: construindo um futuro responsável. [Internet]. Medium.com. 2022. Dispo
 
 em: https://medium.com/@dheiver.santos_10420/t%C3%ADtulo-a-import%C3%A2ncia-
 
-========== PÁGINA 58 ==========
+
+
 
 da-%C3%A9tica-no-desenvolvimento-do-processamento-de-linguagem-natural-
 
@@ -1879,6 +1921,7 @@ ZERBINATI, M.. Introdução a Recuperação de Informação (Information Retriev
 introdu%C3%A7%C3%A3o-a-recupera%C3%A7%C3%A3o-de-informa%C3%A7%C3%A3o-
 information-retrieval-463023294d7d. Acesso em: 16 jul. 2024. 
 
+Saiba mais…
 
-========== PÁGINA 59 ==========
-
+	» Competências Imersivas, uma parceria entre a Embrapii e a Universidade 
+Federal de Goiás (UFG).

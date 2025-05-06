@@ -4,10 +4,60 @@ import re
 import streamlit as st
 import tempfile
 
-os.environ['TIKA_SERVER_JAR'] = 'tika-server.jar'
+# os.environ['TIKA_SERVER_JAR'] = 'tika-server.jar'
+
+def is_page_number_line(line: str, max_page_num: int = 1000) -> bool:
+    """
+    Determina se uma linha contém apenas um número de página.
+    Considera números alinhados à direita como números de página.
+    """
+    # remove espaços no início e fim
+    stripped_line = line.strip()
+    
+    # se a linha está vazia não é número de página
+    if not stripped_line:
+        return False
+        
+    # se é apenas um número e está dentro do limite razoável de páginas
+    if stripped_line.isdigit() and int(stripped_line) <= max_page_num:
+        # verifica se o número está alinhado à direita na linha original
+        if line.rstrip() == line.rstrip().rjust(len(line)):
+            return True
+    
+    return False
+
+def clean_page_numbers(text: str) -> str:
+    """
+    Remove números de página e limpa formatação do texto.
+    """
+    lines = text.split('\n')
+    cleaned_lines = []
+    previous_line = ''
+    
+    for i, line in enumerate(lines):
+        # pula a linha se for um número de página isolado
+        if is_page_number_line(line):
+            continue
+            
+        # preserva números que fazem parte da estrutura do documento
+        # remove apenas números que parecem ser números de página no final da linha
+        cleaned_line = re.sub(r'\s+\d+\s*$', '', line)
+            
+        # se a linha anterior termina com hífen e esta linha começa com espaços,
+        # mantém a formatação original
+        if previous_line.rstrip().endswith('-'):
+            cleaned_lines.append(cleaned_line)
+        else:
+            # remove qualquer ponto sozinho no início da linha
+            cleaned_line = re.sub(r'^\s*\.\s*', '', cleaned_line)
+            cleaned_lines.append(cleaned_line)
+            
+        previous_line = cleaned_line
+    
+    return '\n'.join(cleaned_lines)
 
 def extract_pdf_to_text(pdf_file):
-    """Extrai texto de um arquivo PDF usando o Apache Tika."""
+    """Extrai texto de um arquivo PDF usando o Apache Tika e limpa formatação."""
     try:
         # cria um arquivo temporário para salvar o PDF carregado
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf:
@@ -33,20 +83,15 @@ def extract_pdf_to_text(pdf_file):
         pages = text_content.split('\f')
         
         processed_text = ""
-        page_number = 1
-        
+        cleaned_pages = []
+
         for page in pages:
-            page = page.strip()
-            if page and not page.isspace():
-                processed_page = re.sub(
-                    r'^\s*(\d+)\s*$',
-                    lambda m: f"\n{'='*10} PÁGINA {m.group(1)} {'='*10}\n",
-                    page,
-                    flags=re.MULTILINE
-                )
-                processed_text += processed_page.strip() + "\n\n"
-                page_number += 1
-                
+            cleaned_page = clean_page_numbers(page)
+            if cleaned_page.strip():
+                cleaned_pages.append(cleaned_page.strip())
+
+        processed_text = '\n'.join(cleaned_pages)
+
         return processed_text
         
     except Exception as e:
