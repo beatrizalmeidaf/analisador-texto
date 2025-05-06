@@ -1,110 +1,136 @@
 # **Analisador Inteligente de Texto**
 
-O **Analisador Inteligente de Texto** será uma ferramenta robusta e versátil para processamento e análise textual. Ele integrará técnicas avançadas de processamento de linguagem natural (NLP), estatística e aprendizado de máquina para extrair informações valiosas de textos. A ferramenta será modular, escalável e voltada para aplicações como análise de dados, classificação textual, extração de informações e sumarização.
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/0eac93fb-f5ff-4af3-b4cc-476aeb6acb28" alt="Logo" width="300"/>
+</p>
+
+O **Analisador Inteligente de Texto** é uma ferramenta robusta para processamento e análise textual. Utilizando técnicas de Processamento de Linguagem Natural (NLP), estatística e aprendizado de máquina, a aplicação permite extrair informações relevantes de textos em diversos formatos e contextos.
+
 
 ---
 
 ## **Objetivo do Projeto**
 
-O objetivo desse projeto é desenvolver um analisador textual completo que combine métodos analíticos tradicionais e inteligência artificial para atender a diferentes necessidades de análise textual em áreas como:  
+Desenvolver um analisador textual completo que combine métodos analíticos tradicionais e inteligência artificial para atender a diferentes necessidades de análise textual, como:
 
-- **Classificação Automática de Documentos**: Automatizar a categorização de textos, como e-mails, artigos ou relatórios.  
-- **Extração de Palavras-chave**: Identificar os termos mais relevantes de documentos extensos.  
-- **Resumo de Notícias ou Relatórios**: Economizar tempo ao acessar as principais ideias de textos longos.  
-- **Visualização de Dados Textuais**: Gerar insights claros e visuais com gráficos e representações matemáticas.  
+* **Classificação automática de documentos**: Categorizar e organizar textos como e-mails, artigos ou relatórios.
+* **Extração de palavras-chave**: Identificar os termos mais relevantes de documentos extensos.
+* **Resumo automático de textos**: Destacar as principais ideias de textos longos.
+* **Visualização de dados textuais**: Gerar insights claros por meio de gráficos e representações matemáticas.
 
 ---
 
 ## **Diferenciais da Ferramenta**
 
-- **Abordagem Modular**: Cada componente será implementado de forma independente, permitindo fácil expansão e manutenção.  
-- **Integração de Técnicas Clássicas e Modernas**: A ferramenta combinará estatísticas tradicionais, representações matemáticas e modelos de inteligência artificial.  
-- **Flexibilidade**: Poderá ser usada em diversos contextos, como análises acadêmicas, empresariais ou jornalísticas.  
-- **Interface Intuitiva**: Será acessível tanto para programadores quanto para usuários sem experiência técnica.  
-- **Escalabilidade**: Poderá ser usada localmente ou implantada como um serviço na web.  
+* **Abordagem Modular**: Cada componente pode ser desenvolvido, testado e mantido de forma independente.
+* **Técnicas Tradicionais e Modernas**: Combinação de estatísticas clássicas e modelos de inteligência artificial.
+* **Interface Intuitiva**: Acesso via interface web com foco na experiência do usuário.
+* **Escalabilidade**: Pode ser executada localmente ou implantada como serviço web.
+* **Flexibilidade de Aplicação**: Útil em contextos acadêmicos, corporativos, jornalísticos e mais.
 
 ---
 
 ## **Funcionalidades Planejadas**
 
-A ferramenta será composta pelos seguintes módulos:  
+A ferramenta está composta pelos seguintes módulos:  
 
 ### 1. Leitura e Pré-processamento de Texto  
 - **Objetivo**: Preparar o texto para análises posteriores, garantindo limpeza e consistência.  
-- **Funcionalidades Planejadas**:  
+- **Funcionalidades**:  
   - Leitura de arquivos `.txt` ou entrada de texto manual.  
   - Normalização do texto: remoção de caracteres especiais, acentos e conversão para letras minúsculas.  
   - Tokenização: segmentação em palavras ou frases.  
   - Contagem e frequência de palavras.  
-- **Tecnologias Planejadas**: Python (`open`, `re`, `collections.Counter`).  
+- **Tecnologias Usadas**: Python (`open`, `re`, `collections.Counter`).  
 
 ### 2. Estatísticas e Análise de Texto  
 - **Objetivo**: Oferecer insights quantitativos e visuais sobre o texto analisado.  
-- **Funcionalidades Planejadas**:  
+- **Funcionalidades**:  
   - Cálculo de métricas estatísticas: média, mediana e desvio padrão do comprimento das palavras.  
   - Geração de gráficos (histogramas, nuvem de palavras).  
   - Cálculo de TF-IDF para avaliar a relevância de termos específicos.  
-- **Tecnologias Planejadas**: `pandas`, `word_cloud`, `matplotlib`.  
+- **Tecnologias Usadas**: `pandas`, `word_cloud`, `matplotlib`.  
 
-### 3. Representação Matemática do Texto  
+### 3. Representação Matemática do Texto  (em desenvolvimento)
 - **Objetivo**: Transformar o texto em formatos matemáticos para análises avançadas.  
-- **Funcionalidades Planejadas**:  
+- **Funcionalidades**:  
   - Criação de matrizes de coocorrência.  
   - Implementação do modelo Bag of Words (BoW).  
-- **Tecnologias Planejadas**: `numpy`.  
+- **Tecnologias Usadas**: `numpy`.  
 
 ### 4. Classificação Automática de Texto com Inteligência Artificial  
 - **Objetivo**: Automatizar a categorização de textos.
-- **Funcionalidades Planejadas**:  
+- **Funcionalidades**:  
   - Treinamento de modelos de aprendizado supervisionado para classificação de textos.   
-- **Tecnologias Planejadas**: `scikit-learn`, `PyTorch` ou `TensorFlow`.  
+- **Tecnologias Usadas**: `scikit-learn`, `PyTorch` ou `TensorFlow`.  
 
 ### 5. Resumo Automático de Textos  
 - **Objetivo**: Extrair os principais pontos de textos longos.  
-- **Funcionalidades Planejadas**:  
+- **Funcionalidades**:  
   - Processamento de textos longos (notícias, relatórios).  
   - Geração de resumos utilizando técnicas baseadas em NLP modernas.  
-- **Tecnologias Planejadas**: `sumy`, `transformers`.  
-
-### 6. Detecção de Fake News  
-- **Objetivo**: Identificar se uma informação pode ser falsa ou enganosa.  
-- **Funcionalidades Planejadas**:  
-  - Análise de confiabilidade baseada em fontes conhecidas.  
-  - Verificação de padrões textuais comuns em fake news.  
-  - Utilização de modelos de aprendizado profundo treinados em bases de dados de notícias verdadeiras e falsas.  
-- **Tecnologias Planejadas**: `scikit-learn`, `transformers`, `TensorFlow`, `scrapy` (para coleta de dados).  
-
+- **Tecnologias Usadas**: `sumy`, `transformers`.  
+- 
 ---
 
 ## **Casos de Uso**
 
-A ferramenta será útil em diferentes contextos:  
-- **Empresas de Tecnologia**: Extração de insights em dados de usuários ou feedbacks.  
-- **Jornalismo e Mídia**: Geração de resumos de notícias e análise de tendências.  
-- **Acadêmico e Pesquisa**: Processamento de grandes volumes de textos para estudos quantitativos e qualitativos.  
-- **Marketing**: Identificação de palavras-chave.  
-- **Checagem de Fatos**: Verificação automática da veracidade de textos e notícias.  
+* **Empresas de tecnologia**: Análise de feedbacks e dados de usuários.
+* **Jornalismo**: Geração automática de resumos de notícias.
+* **Academia**: Apoio a estudos quantitativos e qualitativos com grandes volumes de texto.
+* **Marketing**: Identificação de temas e palavras-chave em campanhas.
 
 ---
 
-## **Tecnologias Planejadas**
+## **Tecnologias Utilizadas**
 
-O projeto utilizará tecnologias amplamente reconhecidas por sua eficiência e flexibilidade:  
-- **Linguagem**: Python  
-- **Bibliotecas de Processamento**:  
-  - NLP: `nltk`, `spacy`  
-  - Estatísticas: `pandas`, `numpy`  
-  - Visualizações: `matplotlib`, `wordcloud`  
-- **Machine Learning**: `scikit-learn`, `PyTorch`  
-- **Sumarização e NLP Avançada**: `transformers`  
-- **Desenvolvimento Web**:  `Streamlit`  
+* **Linguagem**: Python
+* **NLP**: `nltk`, `spaCy`, `transformers`, `tika`
+* **Visualização**: `matplotlib`, `wordcloud`
+* **Estatística e Vetorização**: `numpy`, `pandas`, `scikit-learn`
+* **Interface Web**: `Streamlit`
+* **Sumarização**: `transformers`
+* **Classificação e ML**: `scikit-learn`
 
 ---
 
-## **Como o Projeto Será Desenvolvido**
+## **Como Rodar o Projeto Localmente**
 
-1. Estruturação do repositório e definição das funcionalidades principais.  
-2. Implementação de cada módulo de forma independente, com integração posterior.  
-3. Desenvolvimento de testes automatizados para garantir a qualidade do código.  
-4. Criação de uma interface web para facilitar o uso.  
+### 1. Clone o repositório
 
+```bash
+git clone https://github.com/beatrizalmeidaf/analisador-texto.git
+cd analisador-texto
+```
+
+### 2. Crie um Ambiente Virtual
+
+#### Usando `venv`:
+
+```bash
+python -m venv venv
+source venv/bin/activate      # Linux/macOS
+venv\Scripts\activate         # Windows
+```
+
+#### Usando `conda`:
+
+```bash
+conda create -n analisador-texto python=3.10
+conda activate analisador-texto
+```
+
+### 3. Instale as Dependências
+
+```bash
+pip install -r requirements.txt
+```
+
+> **Atenção:** Para realizar o carregamento de arquivos PDF com a biblioteca `tika`, é necessário ter o Java instalado no sistema.
+> O projeto foi testado com o **OpenJDK 24**, mas versões anteriores acima da versão 8 também podem funcionar.
+
+### 4. Execute a Aplicação Web
+
+```bash
+streamlit run web/streamlit_app.py
+```

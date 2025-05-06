@@ -7,13 +7,14 @@ import gc
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(root_dir)
 
+from src.extract_pdf.extractor import extract_pdf_to_text
 from src.preprocessing.cleaner import clean_text
 from src.preprocessing.tokenizer import tokenizer, word_counter
 from src.analysis.statistics import calculate_metrics, calculate_tfidf
 from src.classification.model import classificador, create_plotly_visualization
 from src.analysis.visualization import plot_metrics, generate_wordcloud, plot_tfidf, plot_word_frequency
-from src.question.question import load_qa_pipeline
-from src.summarization.summarizer import load_summarizer
+from src.question.question import answer_question
+from src.summarization.summarizer import resumir_texto
 # from src.representation import bow, cooccurrence
 
 st.set_page_config(layout="wide")
@@ -81,6 +82,7 @@ def process_text_chunked(text):
     return ' '.join(all_tokens), all_tokens, all_word_counts, metrics, df_tfidf
 
 def save_temp_text(text):
+    """ Salva o arquivo de forma temporária """
     data_dir = os.path.join(root_dir, 'data')
     os.makedirs(data_dir, exist_ok=True)
     file_path = os.path.join(data_dir, 'teste.txt')
@@ -89,6 +91,7 @@ def save_temp_text(text):
     return file_path
 
 def process_text(text):
+    """ Faz os processamentos necessários no texto """
     save_temp_text(text)
     cleaned_text = clean_text()
     tokens = tokenizer(cleaned_text)
@@ -99,6 +102,7 @@ def process_text(text):
     return cleaned_text, tokens, word_counts, metrics, df_tfidf
 
 def render_visualization(viz_type, tokens, metrics, word_counts, df_tfidf):
+    """ Carrega as visualizações necessárias para cada tipo de gráfico """
     if viz_type == "Nuvem de Palavras":
         st.subheader("Nuvem de Palavras")
         col1, col2, col3 = st.columns([1,5,1])  
@@ -133,6 +137,7 @@ def render_visualization(viz_type, tokens, metrics, word_counts, df_tfidf):
             st.pyplot(fig_tfidf, use_container_width=True)
 
 def initialize_session_state():
+    """ Inicialização de estados """
     if 'processed_data' not in st.session_state:
         st.session_state.processed_data = None
     if 'viz_type' not in st.session_state:
@@ -141,18 +146,40 @@ def initialize_session_state():
         st.session_state.tab = "Estatísticas"
 
 def handle_viz_selection(viz_name):
+    """ Seleção das abas para cada tipo de gráficos """
     st.session_state.viz_type = viz_name
     st.session_state.tab = "Visualizações"
+
+def get_metrics_interpretation(media, mediana, desvio_padrao):
+    """Retorna interpretações concisas baseadas nos valores específicos das métricas"""
+    interpretacao = ""
+    
+    # interpretação da média
+    if media < 4:
+        interpretacao += "**Média baixa**: Texto com predominância de palavras curtas, sugerindo linguagem mais informal ou simples.\n\n"
+    elif media >= 4 and media <= 6:
+        interpretacao += "**Média equilibrada**: Texto com boa distribuição entre palavras curtas e longas, comum em textos jornalísticos ou relatórios.\n\n"
+    else:
+        interpretacao += "**Média alta**: Texto com palavras mais longas e complexas, indicando possível natureza técnica ou acadêmica.\n\n"
+    
+    # interpretação do desvio padrão
+    if desvio_padrao < 1.5:
+        interpretacao += "**Baixa variação**: Palavras com tamanhos semelhantes, sugerindo estilo uniforme e direto."
+    elif desvio_padrao >= 1.5 and desvio_padrao <= 2.5:
+        interpretacao += "**Variação moderada**: Vocabulário diversificado com bom equilíbrio, típico de textos formais bem estruturados."
+    elif desvio_padrao > 2.5 and desvio_padrao <= 3.0:
+        interpretacao += "**Alta variação**: Mistura frequente de palavras curtas e longas, indicando linguagem expressiva ou criativa."
+    else:
+        interpretacao += "**Variação muito alta**: Vocabulário extremamente diverso, podendo refletir informalidade, uso de termos técnicos ou transcrições de fala."
+    
+    return interpretacao
 
 def render_classification_section(tokens):
     """Renderiza a seção de classificação no Streamlit com visualizações aprimoradas."""
     st.subheader("Classificação do Texto")
     
-
     st.markdown("""
     Essa seção utiliza modelos de aprendizado profundo (XLM-RoBERTa) para classificar o texto quanto ao seu gênero textual.
-    
-    Os resultados abaixo mostram os gêneros mais prováveis detectados no texto, junto com o nível de confiança da classificação.
     """)
     
     with st.spinner('Realizando classificação do texto... Isso pode levar alguns segundos.'):
@@ -176,19 +203,12 @@ def render_classification_section(tokens):
             {get_genre_description(genero_nome_pt)}
             """)
             
-            st.divider()
-            
             # visualização em barras horizontais com Plotly
             st.subheader("Distribuição de Confiança por Gênero")
             bar_fig = create_plotly_visualization(genero_results)
             if bar_fig:
                 st.plotly_chart(bar_fig, use_container_width=True)
             
-            # visualização em radar
-            #radar_fig = create_radar_chart(genero_results)
-            #if radar_fig:
-             #   st.plotly_chart(radar_fig, use_container_width=True)
-                
             with st.expander("Sobre os gêneros textuais"):
                 st.markdown("""
                 ### Descrição dos Gêneros Textuais
@@ -205,22 +225,24 @@ def render_classification_section(tokens):
                 """)
         else:
             st.warning("Não foi possível classificar o texto. Verifique se o texto possui conteúdo suficiente ou tente novamente.")
-    
-    st.divider()
+
+def render_summarization_section(texto_completo):
+    """Renderiza a seção de sumarização separadamente"""
     st.subheader("Sumarização do Texto")
     
+    st.markdown("""
+    Essa ferramenta utiliza o modelo do Recogna NLP para criar um resumo conciso 
+    do texto analisado, mantendo os pontos principais.
+    """)
+    
     if st.button("Gerar Resumo"):
+        st.info("O processamento pode levar alguns segundos. Por favor, aguarde...")
         with st.spinner("Gerando resumo..."):
             try:
-                # Carrega a função de sumarização
-                resumo = load_summarizer(texto_completo)
-
+                resumo = resumir_texto(texto_completo)
                 st.write(resumo)
-
             except Exception as e:
                 st.error(f"Erro ao gerar resumo: {str(e)}")
-
-         
 
 def get_genre_description(genre_name):
     """Retorna uma descrição detalhada para o gênero textual específico."""
@@ -284,36 +306,32 @@ def get_genre_description(genre_name):
     return descriptions.get(genre_name, "Não há descrição detalhada disponível para esse gênero.")
 
 def render_question(text_input):
+    """ Carrega a função que chama o modelo para perguntas sobre o texto """
     st.title("Perguntas Interpretativas sobre o Texto")
 
     question = st.text_input("Faça uma pergunta sobre o texto:")
 
     if question:
-        qa_pipeline = load_qa_pipeline()
+        st.info("O processamento pode levar alguns segundos. Por favor, aguarde...")
         try:
-
-            inputs = f"pergunta: {question} contexto: {text_input}"
-          
-            result = qa_pipeline(inputs, max_length=100)
-            
+            answer = answer_question(text_input[:512])
             st.subheader("Resposta:")
-            st.write(result[0]['generated_text'])
+            st.write(answer)
         except Exception as e:
             st.error(f"Erro ao processar pergunta: {str(e)}")
 
 
 def main():
+
     initialize_session_state()
 
     st.title('Analisador de Texto')
     
     input_method = st.radio(
         "Escolha o método de entrada:",
-        ("Digitar texto", "Upload de arquivo .txt")
+        ("Digitar texto", "Upload de arquivo .txt", "Upload de arquivo PDF")
     )
     
-    text_input = ""
-
     text_input = ""
 
     if input_method == "Digitar texto":
@@ -324,7 +342,6 @@ def main():
             help="Digite ou cole o texto que deseja analisar."
         )
         
-
     elif input_method == "Upload de arquivo .txt":
         uploaded_file = st.file_uploader(
             "Escolha um arquivo .txt", 
@@ -342,12 +359,42 @@ def main():
             try:
                 with st.spinner('Carregando arquivo...'):
                     text_input = process_large_file(uploaded_file)
+                    st.session_state.text_input = text_input
+                    st.session_state.uploaded_file_name = uploaded_file.name
                     
                 with st.expander("Mostrar Preview do Arquivo"):
                     st.write(text_input[:1000] + "..." if len(text_input) > 1000 else text_input)
                     
             except Exception as e:
                 st.error(f"Erro ao processar o arquivo: {str(e)}")
+                return
+    
+    elif input_method == "Upload de arquivo PDF":
+        uploaded_pdf = st.file_uploader(
+            "Escolha um arquivo PDF", 
+            type="pdf",
+            help="Suporta arquivos PDF. O tempo de processamento depende do tamanho e complexidade do PDF."
+        )
+        
+        if uploaded_pdf:
+            file_size = uploaded_pdf.size / (1024 * 1024)  # tamanho em MB
+            st.info(f"Tamanho do arquivo PDF: {file_size:.2f}MB")
+            
+            try:
+                with st.spinner('Extraindo texto do PDF...'):
+                    text_input = extract_pdf_to_text(uploaded_pdf)
+                    st.session_state.text_input = text_input
+                    st.session_state.uploaded_file_name = uploaded_pdf.name
+                    
+                if text_input:
+                    st.success(f"Texto extraído com sucesso do arquivo: {uploaded_pdf.name}")
+                    
+                    with st.expander("Mostrar Preview do Texto Extraído"):
+                        st.write(text_input[:1000] + "..." if len(text_input) > 1000 else text_input)
+
+                        
+            except Exception as e:
+                st.error(f"Erro ao processar o arquivo PDF: {str(e)}")
                 return
     
     analyze_button = st.button('Analisar Texto')
@@ -368,10 +415,11 @@ def main():
         
         st.session_state.tab = st.radio(
             "",
-            ["Estatísticas", "Visualizações", "Busca e Informações", "Classificação e Sumarização"],
+            ["Estatísticas", "Visualizações", "Busca e Informações", "Classificação", "Sumarização"],
             horizontal=True,
             label_visibility="hidden",
-            index=["Estatísticas", "Visualizações", "Busca e Informações", "Classificação e Sumarização"].index(st.session_state.tab)
+            index=["Estatísticas", "Visualizações", "Busca e Informações", "Classificação", "Sumarização"].index(st.session_state.tab) 
+            if st.session_state.tab in ["Estatísticas", "Visualizações", "Busca e Informações", "Classificação", "Sumarização"] else 0
         )
         
         st.divider()
@@ -387,33 +435,37 @@ def main():
             with col3:
                 st.metric("Desvio Padrão Tamanho de Palavras", f"{metrics['desvio_padrao']:.2f}")
 
-            st.markdown("""
-            ### Interpretação das Métricas
+            interpretacao = get_metrics_interpretation(metrics['media'], metrics['mediana'], metrics['desvio_padrao'])
+            st.info(interpretacao)
+            
+            with st.expander("Saiba mais sobre as métricas de tamanho de palavras"):
+                st.markdown("""
+                ### Interpretação Detalhada das Métricas
 
-            A métrica de **comprimento de palavras** analisa a distribuição do tamanho das palavras em um texto.  
-            Em português, a **média do comprimento das palavras** geralmente varia entre **4 e 6 caracteres**.
+                A métrica de **comprimento de palavras** analisa a distribuição do tamanho das palavras em um texto.  
+                Em português, a **média do comprimento das palavras** geralmente varia entre **4 e 6 caracteres**.
 
-            - **Média menor que 4** → O texto contém muitas palavras curtas, como artigos, pronomes e preposições.  
-            Pode indicar um estilo mais informal, como mensagens rápidas, redes sociais ou diálogos.
-            - **Média entre 4 e 6** → Representa um equilíbrio entre palavras curtas e longas,  
-            comum em textos jornalísticos, textos acadêmicos introdutórios e relatórios técnicos.
-            - **Média maior que 6** → Indica presença de palavras mais longas e complexas,  
-            geralmente associadas a vocabulário técnico, jurídico ou acadêmico avançado.
+                - **Média menor que 4** → O texto contém muitas palavras curtas, como artigos, pronomes e preposições.  
+                Pode indicar um estilo mais informal, como mensagens rápidas, redes sociais ou diálogos.
+                - **Média entre 4 e 6** → Representa um equilíbrio entre palavras curtas e longas,  
+                comum em textos jornalísticos, textos acadêmicos introdutórios e relatórios técnicos.
+                - **Média maior que 6** → Indica presença de palavras mais longas e complexas,  
+                geralmente associadas a vocabulário técnico, jurídico ou acadêmico avançado.
 
-            O **desvio padrão** mede a dispersão do comprimento das palavras:
-            - **Desvio padrão menor que 1.5** → Baixa variação: o texto utiliza palavras com tamanhos semelhantes,  
-            sugerindo estilo uniforme e direto (ex: manuais, instruções técnicas).
-            - **Desvio padrão entre 1.5 e 2.5** → Variação controlada: o texto apresenta vocabulário diversificado com equilíbrio,  
-            típico de textos formais bem estruturados.
-            - **Desvio padrão entre 2.5 e 3.0** → Alta variação: o texto mistura palavras curtas e longas com frequência,  
-            o que pode indicar criatividade ou linguagem mais expressiva e dinâmica.
-            - **Desvio padrão acima de 3.0** → Variação muito alta: textos assim costumam ter vocabulário extremamente diverso,  
-            podendo refletir informalidade excessiva, uso de gírias, transcrições de fala espontânea ou áreas altamente técnicas.
-            """)
+                O **desvio padrão** mede a dispersão do comprimento das palavras:
+                - **Desvio padrão menor que 1.5** → Baixa variação: o texto utiliza palavras com tamanhos semelhantes,  
+                sugerindo estilo uniforme e direto (ex: manuais, instruções técnicas).
+                - **Desvio padrão entre 1.5 e 2.5** → Variação controlada: o texto apresenta vocabulário diversificado com equilíbrio,  
+                típico de textos formais bem estruturados.
+                - **Desvio padrão entre 2.5 e 3.0** → Alta variação: o texto mistura palavras curtas e longas com frequência,  
+                o que pode indicar criatividade ou linguagem mais expressiva e dinâmica.
+                - **Desvio padrão acima de 3.0** → Variação muito alta: textos assim costumam ter vocabulário extremamente diverso,  
+                podendo refletir informalidade excessiva, uso de gírias, transcrições de fala espontânea ou áreas altamente técnicas.
+                """)
 
             st.divider()
             
-            with st.container():
+            with st.expander("Sobre análise TF-IDF"):
                 st.markdown("""
                         A análise **TF-IDF** é uma métrica estatística que avalia a importância de uma palavra em um texto.  
                         Ela combina dois fatores:
@@ -434,9 +486,6 @@ def main():
                         Essa métrica ajuda a destacar as palavras mais importantes para a compreensão do conteúdo.
                         """)
 
-            
-            st.divider()
-            
             st.subheader("Top 15 Termos Mais Relevantes")
             
             with st.container():
@@ -482,8 +531,12 @@ def main():
                     st.markdown(f"<small>{viz_desc}</small>", unsafe_allow_html=True)
     
         
-        elif st.session_state.tab == "Classificação e Sumarização":
+        elif st.session_state.tab == "Classificação":
             render_classification_section(tokens)
+            
+        elif st.session_state.tab == "Sumarização":
+            texto_completo = " ".join(tokens)
+            render_summarization_section(texto_completo)
 
         elif st.session_state.tab == "Busca e Informações":
             render_question(text_input)
@@ -495,7 +548,9 @@ def main():
         2. **Análise Estatística**: Calcula métricas sobre o comprimento das palavras
         3. **Análise TF-IDF**: Identifica termos mais relevantes no texto
         4. **Visualizações**: Gera gráficos e nuvem de palavras
-        5. **Classificação e Sumarização**: *(em desenvolvimento)*
+        5. **Buscas e Informações**: Permite fazer perguntas interpretativas sobre o texto
+        6. **Classificação**: Identifica o gênero textual usando um modelo de aprendizado profundo
+        7. **Sumarização**: Cria um resumo automático do texto
         """)
 
 if __name__ == '__main__':

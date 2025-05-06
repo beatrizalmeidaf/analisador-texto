@@ -1,1 +1,125 @@
-A Revolução Francesa foi o evento histórico que findou o absolutismo e instaurou o modelo republicano de governo. Aconteceu na França, entre 1789 e 1799, mas seu impacto extrapolou as fronteiras do país e mesmo da Europa, influenciando mudanças em todo mundo, como as independências de países sul-americanos.
+Documentações Fundamentais para Aprendizado por
+Reforço em Projetos de Loǵıstica
+
+Beatriz Almeida
+
+Introdução
+
+Esse documento apresenta minhas pesquisas sobre as principais documentações e bib-
+liotecas utilizadas no desenvolvimento de projetos baseados em Aprendizado por Re-
+forço (Reinforcement Learning – RL), com foco especial na otimização de rotas
+loǵısticas. Os recursos listados incluem guias de bibliotecas populares, ambientes de
+simulação e ferramentas para resolução de problemas de roteamento veicular.
+
+1 Stable-Baselines3
+
+Link: https://stable-baselines3.readthedocs.io/en/master/guide/rl.html
+
+• Biblioteca de RL baseada emPyTorch, amplamente usada para prototipação de agentes
+inteligentes.
+
+• Implementa algoritmos como DQN, PPO, A2C, SAC, entre outros.
+
+• Possui integração com ambientes do Gymnasium/Farama.
+
+• É ideal para aplicações loǵısticas em pequena ou média escala.
+
+• A documentação oficial apresenta conceitos-chave de RL, como observações, recompen-
+sas, ações e aprendizado por tentativa e erro.
+
+2 RLlib (Ray)
+
+Link: https://docs.ray.io/en/latest/rllib/index.html
+
+• Plataforma altamente escalável para desenvolvimento de soluções de RL para aplicações
+do mundo real.
+
+• Suporta execução distribúıda, paralelismo e integração com clusters.
+
+• Algoritmos avançados como PPO, IMPALA, DDPG e DQN estão dispońıveis.
+
+• Ideal para cenários de loǵıstica em larga escala, com múltiplos agentes e grandes
+volumes de dados.
+
+• Permite a criação de ambientes personalizados e pipelines de treinamento com check-
+points, métricas e callbacks.
+
+========== PÁGINA 1 ==========
+
+https://stable-baselines3.readthedocs.io/en/master/guide/rl.html
+https://docs.ray.io/en/latest/rllib/index.html
+
+
+3 Gymnasium (Farama Foundation)
+
+Link: https://gymnasium.farama.org/introduction/basic_usage/
+
+• Oferece uma interface padrão para ambientes de RL
+
+• Permite simular problemas clássicos como CartPole, MountainCar, LunarLander, entre
+outros.
+
+• Também pode ser usado para simular ambientes de loǵıstica (ex: roteamento com grafos
+personalizados).
+
+• É compat́ıvel com Stable-Baselines3 e RLlib.
+
+4 Google OR-Tools – Roteamento
+
+Link: https://developers.google.com/optimization/routing?hl=pt-br
+
+• Biblioteca da Google para resolução de problemas de otimização combinatória.
+
+• Contém algoritmos eficientes para oProblema de Roteamento de Véıculos (VRP),
+TSP, janelas de tempo, restrições de capacidade, entre outros.
+
+• Pode ser usada como baseline ou geradora de soluções iniciais em projetos baseados em
+RL.
+
+• Ideal para o projeto de otimizar entregas, coletas e planejamento de rotas.
+
+• Embora não seja uma biblioteca de RL, pode ser combinada com RL para estratégias
+h́ıbridas.
+
+5 Spinning Up – OpenAI
+
+Link: https://spinningup.openai.com/en/latest/user/introduction.html
+
+• Projeto educacional da OpenAI voltado para iniciantes em Deep Reinforcement
+Learning.
+
+• Explica detalhadamente conceitos como poĺıticas, funções de valor, gradientes de poĺıtica
+e exploração/exploração.
+
+• Inclui implementações minimalistas de algoritmos como PPO, VPG, TRPO, DDPG.
+
+• Bom para entender como criar o próprio ambiente de roteamento e desenvolver algorit-
+mos de RL customizados.
+
+• Foco em aprendizado profundo, com código em PyTorch e explicações matemáticas
+acesśıveis.
+
+========== PÁGINA 2 ==========
+
+https://gymnasium.farama.org/introduction/basic_usage/
+https://developers.google.com/optimization/routing?hl=pt-br
+https://spinningup.openai.com/en/latest/user/introduction.html
+
+
+Conclusão
+
+O conjunto de ferramentas descritas nesse documento cobre desde o aprendizado inicial
+em ambientes simulados até aplicações reais e escaláveis em loǵıstica e otimização de
+rotas. Uma boa sugestão é começar com o Spinning Up para entender os fundamentos,
+usar o Gymnasium para protótipos, depois aplicar Stable-Baselines3 e RLlib para
+treinar modelos, e por fim, utilizar Google OR-Tools como benchmark de desempenho
+ou parte de uma solução h́ıbrida.
+
+========== PÁGINA 3 ==========
+
+	Stable-Baselines3
+	RLlib (Ray)
+	Gymnasium (Farama Foundation)
+	Google OR-Tools – Roteamento
+	Spinning Up – OpenAI
+

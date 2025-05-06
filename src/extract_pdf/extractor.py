@@ -1,17 +1,24 @@
 from tika import parser
 import os
 import re
+import streamlit as st
+import tempfile
 
-def extract_pdf_to_txt(pdf_path, output_txt_path):
+os.environ['TIKA_SERVER_JAR'] = 'tika-server.jar'
 
+def extract_pdf_to_text(pdf_file):
+    """Extrai texto de um arquivo PDF usando o Apache Tika."""
     try:
-
-        if not os.path.exists(pdf_path):
-            print(f"Erro: O arquivo PDF '{pdf_path}' não foi encontrado.")
-            return False
-     
-        print(f"Extraindo texto do arquivo: {pdf_path}")
-        parsed_pdf = parser.from_file(pdf_path)
+        # cria um arquivo temporário para salvar o PDF carregado
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_pdf:
+            temp_pdf.write(pdf_file.getvalue())
+            temp_pdf_path = temp_pdf.name
+        
+        # extrai o conteúdo do PDF
+        parsed_pdf = parser.from_file(temp_pdf_path)
+        
+        # remove o arquivo temporário
+        os.unlink(temp_pdf_path)
         
         if 'content' in parsed_pdf:
             text_content = parsed_pdf['content']
@@ -19,44 +26,29 @@ def extract_pdf_to_txt(pdf_path, output_txt_path):
             text_content = parsed_pdf.get('text', '')
             
         if not text_content:
-            print("Aviso: Nenhum texto foi extraído do PDF.")
-            return False
-        
+            st.warning("Aviso: Nenhum texto foi extraído do PDF.")
+            return ""
+            
         # dividir o conteúdo em páginas
         pages = text_content.split('\f')
         
-        with open(output_txt_path, 'w', encoding='utf-8') as txt_file:
-            page_number = 1
-            
-            for page in pages:
+        processed_text = ""
+        page_number = 1
+        
+        for page in pages:
+            page = page.strip()
+            if page and not page.isspace():
+                processed_page = re.sub(
+                    r'^\s*(\d+)\s*$',
+                    lambda m: f"\n{'='*10} PÁGINA {m.group(1)} {'='*10}\n",
+                    page,
+                    flags=re.MULTILINE
+                )
+                processed_text += processed_page.strip() + "\n\n"
+                page_number += 1
                 
-                page = page.strip()
-
-                if page and not page.isspace():
-                    processed_page = re.sub(r'^\s*(\d+)\s*$', 
-                                         lambda m: f"\n{'='*10} PÁGINA {m.group(1)} {'='*10}\n", 
-                                         page,
-                                         flags=re.MULTILINE)
-                    
-                    txt_file.write(processed_page.strip())
-                    txt_file.write("\n\n")
-                    page_number += 1
-            
-        print(f"Texto extraído com sucesso e salvo em: {output_txt_path}")
-        print(f"Total de páginas com conteúdo: {page_number - 1}")
-        return True
+        return processed_text
         
     except Exception as e:
-        print(f"Erro ao processar o PDF: {str(e)}")
-        return False
-
-if __name__ == "__main__":
-    pdf_path = "../ebook.pdf" 
-    output_txt_path = "ebook.txt"
-    
-    success = extract_pdf_to_txt(pdf_path, output_txt_path)
-    
-    if success:
-        print("\nConteúdo do arquivo TXT:")
-        with open(output_txt_path, 'r', encoding='utf-8') as txt_file:
-            print(txt_file.read())
+        st.error(f"Erro ao processar o PDF: {str(e)}")
+        return ""

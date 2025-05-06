@@ -1,1 +1,0 @@
-# Arquivo principal da aplicação

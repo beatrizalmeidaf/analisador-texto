@@ -1,11 +1,7 @@
 import streamlit as st
-import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
-import numpy as np
 from transformers import pipeline
 import plotly.express as px
-import plotly.graph_objects as go
 
 LABELS_MAP_PT = {
     'Other': 'Outro',
@@ -114,39 +110,3 @@ def create_plotly_visualization(genero_results):
     
     return fig
 
-def create_radar_chart(genero_results):
-    """Cria um gráfico radar para visualizar a distribuição das categorias."""
-    if not genero_results:
-        return None
-    
-    results = genero_results[:9]
-    
-    categories = [LABELS_MAP_PT.get(item['label'], item['label']) for item in results]
-    scores = [item['score'] for item in results]
-
-    fig = go.Figure()
-    
-    fig.add_trace(go.Scatterpolar(
-        r=scores,
-        theta=categories,
-        fill='toself',
-        fillcolor='rgba(114, 183, 178, 0.5)',
-        line=dict(color='#72B7B2', width=2),
-        name='Confiança'
-    ))
-    
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(
-                visible=True,
-                range=[0, 1],
-                tickformat='.0%'
-            )
-        ),
-        title='Distribuição de Gêneros Textuais',
-        font=dict(family="Arial, sans-serif"),
-        height=500,
-        margin=dict(l=80, r=80, t=70, b=50)
-    )
-    
-    return fig
