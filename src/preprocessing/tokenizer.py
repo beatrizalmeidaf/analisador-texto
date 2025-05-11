@@ -3,6 +3,7 @@ from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from collections import Counter
 from .cleaner import clean_text
+nltk.download('stopwords')
 stopwords = nltk.corpus.stopwords.words('portuguese')
 
 text = clean_text()
