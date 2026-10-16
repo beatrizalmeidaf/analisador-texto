@@ -115,6 +115,11 @@ function isProse(text: string, nWords: number) {
   return /[.!?…;:]["”')\]]?$/.test(text) || nWords >= 12;
 }
 
+/** Para apontar exemplos, só frases completas: sem itens de lista, referências ou URLs. */
+function isFullSentence(text: string) {
+  return /[.!?…]["”')\]]?$/.test(text) && !/^[»•▪◦■\-–—]/.test(text) && !/https?:|www\.|\[Internet\]|acesso em|\(\p{Lu}[\p{L}\s.]+,\s*\d{4}\)\.?$/iu.test(text);
+}
+
 export function readability(sentences: { text: string; words?: string[] }[]): Readability {
   const per = sentences.map((s, i) => {
     // as frases da análise já trazem as palavras em minúsculas
@@ -126,7 +131,8 @@ export function readability(sentences: { text: string; words?: string[] }[]): Re
       syl += n;
       if (n >= 4) poly++;
     }
-    return { i, n: ws.length, syl, poly, prose: isProse(s.text.trim(), ws.length) };
+    const t = s.text.trim();
+    return { i, n: ws.length, syl, poly, prose: isProse(t, ws.length), full: isFullSentence(t) };
   });
   const prose = per.filter((p) => p.prose);
   // sem frases de prosa suficientes (lista, poema, texto muito curto): usa tudo
@@ -141,7 +147,7 @@ export function readability(sentences: { text: string; words?: string[] }[]): Re
   const raw = nWords ? flesch(wps, spw) : 0;
 
   const hardest = per
-    .filter((p) => p.prose && p.n >= 8)
+    .filter((p) => p.full && p.n >= 8)
     .map((p) => ({ sentence: p.i, score: flesch(p.n, p.syl / p.n), words: p.n, syllablesPerWord: p.syl / p.n }))
     .sort((a, b) => a.score - b.score)
     .slice(0, 5);

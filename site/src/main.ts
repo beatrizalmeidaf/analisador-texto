@@ -268,7 +268,8 @@ function renderTiles() {
   const tiles = $('#tiles');
   if (!r) return tiles.replaceChildren();
   const s = r.stats;
-  const tile = (k: string, v: string, sub: string) => h('div', { class: 'tile' }, h('div', { class: 'k' }, k), h('div', { class: 'v' }, v), h('div', { class: 's' }, sub));
+  const tile = (k: string, v: string, sub: string) =>
+    h('div', { class: 'tile' }, h('div', { class: 'k' }, k), h('div', { class: /\d/.test(v) ? 'v' : 'v v-text' }, v), h('div', { class: 's' }, sub));
   tiles.replaceChildren(
     tile('Palavras', fmt(s.words), `${fmt(s.uniqueWords)} distintas`),
     tile('Frases', fmt(s.sentences), `${fmt(s.paragraphs)} parágrafos`),
@@ -342,7 +343,7 @@ function readabilityBlock(rd: Readability, sentences: { text: string }[]) {
         'div',
         { class: 'quote neg' },
         sentences[hs.sentence]?.text ?? '',
-        h('div', { class: 'muted small' }, `${fmt(hs.words)} palavras · ${fmt(hs.syllablesPerWord, 2)} sílabas por palavra · índice ${fmt(Math.max(0, hs.score))}`),
+        h('div', { class: 'muted small' }, `${fmt(hs.words)} palavras · ${fmt(hs.syllablesPerWord, 2)} sílabas por palavra`),
       ),
     ),
     h(
@@ -845,9 +846,10 @@ $('#run-export').addEventListener('click', () => {
       genres: state.lastGenres ?? undefined,
       entities: state.lastEntities ?? undefined,
       cloudCanvas: $<HTMLCanvasElement>('#cloud'),
+      cloudBackground: cssVar('--surface'),
     });
     downloadHtml(html);
-    statusEl.textContent = 'Relatório baixado com sucesso!';
+    statusEl.textContent = 'Relatório baixado.';
     setTimeout(() => (statusEl.textContent = ''), 3000);
   } catch (err) {
     statusEl.textContent = `Erro ao gerar relatório: ${(err as Error).message}`;

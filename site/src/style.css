@@ -248,3 +248,4 @@ mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 2
 .warn { background: var(--surface-2); border-left: 3px solid var(--neg); border-radius: 4px; padding: 8px 10px; color: var(--ink-2); }
 .note p { margin: 0 0 6px; }
 .note p:last-child { margin: 0; }
+.tile .v.v-text { font-size: 1.1rem; line-height: 1.25; margin-top: 6px; }
