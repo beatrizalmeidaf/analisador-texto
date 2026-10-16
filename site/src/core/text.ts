@@ -57,18 +57,3 @@ export function sentences(text: string): Sentence[] {
   });
   return out;
 }
-
-const VOWEL_GROUP_RE = /[aeiouáéíóúâêôãõàüy]+/g;
-const HIATUS_RE = /[íú]|[aeo][aeo]/;
-
-/**
- * Contagem aproximada de sílabas em português: cada grupo de vogais conta como
- * um núcleo, e grupos com hiato evidente ("saúde", "país", "voo") contam dois.
- */
-export function syllables(word: string): number {
-  const groups = word.toLowerCase().match(VOWEL_GROUP_RE);
-  if (!groups) return 1;
-  let n = 0;
-  for (const g of groups) n += g.length > 1 && HIATUS_RE.test(g) ? 2 : 1;
-  return n;
-}

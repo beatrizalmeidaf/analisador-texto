@@ -6,6 +6,28 @@
     <title>Analisador de Texto</title>
     <meta name="description" content="Análise de textos em português direto no navegador: estatísticas, legibilidade, palavras-chave, resumo, busca semântica e classificação — sem servidor." />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232a78d6'/><path d='M9 22V10h4.5a4 4 0 0 1 0 8H9m8 4 6-12' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+    <link rel="preconnect" href="https://huggingface.co" crossorigin />
+    <script>
+      // Ativa o service worker que adiciona os cabeçalhos COOP/COEP (o GitHub Pages
+      // não permite configurá-los). Com eles a IA roda em várias threads.
+      // Na primeira visita a página recarrega uma única vez para passar a usá-lo.
+      (function () {
+        var flag = 'analisador:coi-reload';
+        var store;
+        try { store = window.sessionStorage; } catch (e) { store = null; }
+        if (window.crossOriginIsolated) { if (store) store.removeItem(flag); return; }
+        if (!window.isSecureContext || !('serviceWorker' in navigator)) return;
+        var reload = function () {
+          if (!store || store.getItem(flag)) return; // evita laço se o navegador não suportar
+          store.setItem(flag, '1');
+          location.reload();
+        };
+        navigator.serviceWorker.register('./coi-sw.js').then(function () {
+          if (navigator.serviceWorker.controller) reload();
+          else navigator.serviceWorker.addEventListener('controllerchange', reload, { once: true });
+        }).catch(function () {});
+      })();
+    </script>
   </head>
   <body>
     <header class="top">

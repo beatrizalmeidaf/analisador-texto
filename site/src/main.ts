@@ -2,7 +2,8 @@ import './style.css';
 import WordCloud from 'wordcloud';
 import AnalysisWorker from './workers/analysis.worker.ts?worker';
 import type { AnalysisRequest, AnalysisResponse, AnalysisResult, MLRequest, MLResponse } from './workers/protocol.ts';
-import { readabilityLabel, lengthInterpretation, type Term } from './core/analyze.ts';
+import type { Term } from './core/analyze.ts';
+import { explainReadability, type Readability } from './core/readability.ts';
 import { GENRES } from './genres.ts';
 import { $, h, fmt, pct, duration, hbars, columns, stack, progress, highlighted, cssVar } from './ui.ts';
 import { generateHtmlReport, downloadHtml } from './report.ts';
@@ -128,6 +129,7 @@ async function runAnalysis() {
   state.key = hashText(text);
   status.textContent = `${fmt(res.result.stats.words)} palavras · analisado em ${fmt(res.ms)} ms`;
   renderAll();
+  scheduleBackgroundIndex();
   if (text.length < 2_000_000) store.set('text', text);
 }
 
@@ -266,13 +268,12 @@ function renderTiles() {
   const tiles = $('#tiles');
   if (!r) return tiles.replaceChildren();
   const s = r.stats;
-  const read = readabilityLabel(s.flesch);
   const tile = (k: string, v: string, sub: string) => h('div', { class: 'tile' }, h('div', { class: 'k' }, k), h('div', { class: 'v' }, v), h('div', { class: 's' }, sub));
   tiles.replaceChildren(
     tile('Palavras', fmt(s.words), `${fmt(s.uniqueWords)} distintas`),
     tile('Frases', fmt(s.sentences), `${fmt(s.paragraphs)} parágrafos`),
     tile('Leitura', duration(s.readingMinutes), `${duration(s.speakingMinutes)} em voz alta`),
-    tile('Legibilidade', fmt(s.flesch), read.label),
+    tile('Legibilidade', s.readability.band.label, `índice ${fmt(s.flesch)} de 100${s.readability.reliable ? '' : ' · estimativa'}`),
     tile('Diversidade lexical', pct(s.lexicalDiversity), `${fmt(s.hapax)} palavras únicas`),
   );
 }
@@ -282,7 +283,6 @@ function renderStats() {
   const r = state.result;
   if (!r) return body.replaceChildren(empty());
   const s = r.stats;
-  const read = readabilityLabel(s.flesch);
   const item = (k: string, v: string) => h('div', {}, h('dt', {}, k), h('dd', {}, v));
   const hist = s.lengthHistogram.slice(1);
   const totalWords = s.words || 1;
@@ -293,16 +293,11 @@ function renderStats() {
       item('Caracteres', fmt(s.chars)),
       item('Caracteres sem espaços', fmt(s.charsNoSpaces)),
       item('Palavras de conteúdo', fmt(s.contentWords)),
-      item('Palavras por frase', fmt(s.wordsPerSentence, 1)),
-      item('Sílabas por palavra', fmt(s.syllablesPerWord, 2)),
       item('Tamanho médio da palavra', `${fmt(s.wordLength.mean, 2)} letras`),
       item('Mediana do tamanho', `${fmt(s.wordLength.median, 1)} letras`),
       item('Desvio padrão do tamanho', fmt(s.wordLength.std, 2)),
     ),
-    h('div', { class: 'section-title' }, `Legibilidade: ${fmt(s.flesch)} de 100 (${read.label.toLowerCase()})`),
-    h('div', { class: 'gauge', role: 'meter', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': Math.round(s.flesch) }, h('span', { class: 'fill', style: `width:${s.flesch}%` })),
-    h('div', { class: 'gauge-scale' }, h('span', {}, 'Muito difícil'), h('span', {}, 'Difícil'), h('span', {}, 'Fácil'), h('span', {}, 'Muito fácil')),
-    h('p', { class: 'muted small' }, `${read.detail} Índice de Flesch adaptado ao português (Martins et al., 1996), calculado a partir de palavras por frase e sílabas por palavra.`),
+    readabilityBlock(s.readability, r.sentences),
     h('div', { class: 'section-title' }, 'Distribuição do tamanho das palavras'),
     columns(
       hist,
@@ -310,7 +305,51 @@ function renderStats() {
       (i) => `${i === hist.length - 1 ? `${i + 1} ou mais` : i + 1} letras: ${fmt(hist[i])} palavras (${pct(hist[i] / totalWords)})`,
     ),
     h('p', { class: 'muted small' }, 'Número de letras por palavra (eixo horizontal) e quantidade de palavras com aquele tamanho.'),
-    h('div', { class: 'note' }, lengthInterpretation(s.wordLength.mean, s.wordLength.std)),
+  );
+}
+
+function readabilityBlock(rd: Readability, sentences: { text: string }[]) {
+  const bands = ['Muito difícil', 'Difícil', 'Fácil', 'Muito fácil'];
+  const current = Math.min(3, Math.floor(rd.flesch / 25));
+  return h(
+    'section',
+    { class: 'readability' },
+    h('div', { class: 'section-title' }, `Legibilidade: ${rd.band.label.toLowerCase()}`),
+    h('p', { class: 'read-lead' }, `Índice ${fmt(rd.flesch)} de 100 — quanto maior, mais fácil. Indicado para ${rd.band.audience}.`),
+    h(
+      'div',
+      { class: 'bands', role: 'meter', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': Math.round(rd.flesch), 'aria-valuetext': `${fmt(rd.flesch)}, ${rd.band.label}` },
+      ...bands.map((b, i) => h('span', { class: i === current ? 'on' : '' }, b)),
+      h('i', { class: 'marker', style: `left:${Math.min(99, Math.max(1, rd.flesch))}%` }),
+    ),
+    !rd.reliable
+      ? h('p', { class: 'warn small' }, `Estimativa pouco confiável: o índice é uma média e precisa de pelo menos 5 frases e 100 palavras (este texto tem ${fmt(rd.sentencesUsed)} frase${rd.sentencesUsed === 1 ? '' : 's'} e ${fmt(rd.wordsUsed)} palavras).`)
+      : null,
+    h(
+      'dl',
+      { class: 'stat-grid' },
+      ...[
+        ['Palavras por frase', fmt(rd.wordsPerSentence, 1), 'até 20 em textos fáceis'],
+        ['Sílabas por palavra', fmt(rd.syllablesPerWord, 2), 'perto de 2,1 em textos fáceis'],
+        ['Frases com mais de 30 palavras', pct(rd.longSentenceRatio), ''],
+        ['Palavras com 4+ sílabas', pct(rd.polysyllableRatio), ''],
+      ].map(([k, v, hint]) => h('div', {}, h('dt', {}, k), h('dd', {}, v), hint ? h('dd', { class: 'hint' }, hint) : null)),
+    ),
+    h('div', { class: 'note' }, ...explainReadability(rd).map((t) => h('p', {}, t))),
+    rd.hardest.length ? h('div', { class: 'section-title' }, 'Frases mais difíceis de ler') : null,
+    ...rd.hardest.map((hs) =>
+      h(
+        'div',
+        { class: 'quote neg' },
+        sentences[hs.sentence]?.text ?? '',
+        h('div', { class: 'muted small' }, `${fmt(hs.words)} palavras · ${fmt(hs.syllablesPerWord, 2)} sílabas por palavra · índice ${fmt(Math.max(0, hs.score))}`),
+      ),
+    ),
+    h(
+      'p',
+      { class: 'muted small' },
+      `Índice de Flesch adaptado ao português (Martins et al., 1996): 248,8 − 1,015 × palavras por frase − 84,6 × sílabas por palavra. Calculado sobre ${fmt(rd.sentencesUsed)} frases de prosa; títulos, legendas e itens soltos ficam de fora.`,
+    ),
   );
 }
 
@@ -413,18 +452,71 @@ summaryK.addEventListener('input', () => {
 let summaryTicket = 0;
 let lastSummary: string[] = [];
 
-async function ensureIndex(progressEl: HTMLElement) {
-  const r = state.result!;
-  if (state.indexedKey === state.key) return state.key;
+/**
+ * Indexação (embeddings das frases) compartilhada: a indexação em segundo plano
+ * e os pedidos da interface aguardam o mesmo trabalho, e todos os indicadores
+ * de progresso abertos recebem as atualizações.
+ */
+let indexJob: { key: string; promise: Promise<MLResponse>; listeners: Set<HTMLElement>; last: [string, number] | null } | null = null;
+
+/** Depois do primeiro uso o modelo fica no cache do navegador: aí vale a pena antecipar trabalho. */
+const EMBED_READY = 'embed-ready';
+
+async function ensureIndex(progressEl?: HTMLElement) {
   const key = state.key;
-  progress(progressEl, 'Preparando modelo', null);
-  const res = await ml({ type: 'index', key, sentences: r.sentences.map((s) => s.text) }, (label, p) => progress(progressEl, label, p));
-  if (res.type === 'indexed') {
-    state.indexedKey = res.key;
-    if (res.sampled) progressEl.replaceChildren(h('p', { class: 'muted small' }, `Texto longo: ${fmt(res.count)} de ${fmt(res.total)} frases foram indexadas, amostradas ao longo do texto.`));
-    else progressEl.replaceChildren();
+  if (state.indexedKey === key) return key;
+  if (!indexJob || indexJob.key !== key) {
+    const job: NonNullable<typeof indexJob> = { key, listeners: new Set(), last: null, promise: null! };
+    job.promise = ml({ type: 'index', key, sentences: state.result!.sentences.map((s) => s.text) }, (label, p) => {
+      job.last = [label, p];
+      job.listeners.forEach((el) => progress(el, label, p));
+    });
+    indexJob = job;
+  }
+  const job = indexJob;
+  if (progressEl) {
+    job.listeners.add(progressEl);
+    if (job.last) progress(progressEl, ...job.last);
+    else progress(progressEl, 'Preparando modelo', null);
+  }
+  try {
+    let res: MLResponse;
+    try {
+      res = await job.promise;
+    } catch (err) {
+      // o texto mudou durante a indexação: o trabalho antigo foi descartado, espera o do texto novo
+      if ((err as Error).message === 'cancelado' && state.result && state.key !== key) return ensureIndex(progressEl);
+      throw err;
+    }
+    if (res.type === 'indexed') {
+      if (res.key === state.key) state.indexedKey = res.key;
+      store.set(EMBED_READY, '1');
+      const note = res.sampled ? `Texto longo: ${fmt(res.count)} de ${fmt(res.total)} frases foram indexadas, amostradas ao longo do texto.` : '';
+      job.listeners.forEach((el) => el.replaceChildren(...(note ? [h('p', { class: 'muted small' }, note)] : [])));
+    }
+  } finally {
+    if (indexJob === job) indexJob = null;
+    if (progressEl) job.listeners.delete(progressEl);
   }
   return key;
+}
+
+let warmed = false;
+/** Carrega o modelo de embeddings na memória antes do primeiro pedido (só se já estiver em cache). */
+function warmEmbedder() {
+  if (warmed || !store.get(EMBED_READY)) return;
+  warmed = true;
+  ml({ type: 'warm' }).catch(() => (warmed = false));
+}
+
+let backgroundTimer = 0;
+/** Com o modelo em cache, indexa o texto quando a digitação para — a busca semântica fica pronta antes do clique. */
+function scheduleBackgroundIndex() {
+  clearTimeout(backgroundTimer);
+  if (!store.get(EMBED_READY) || !state.result || state.result.stats.sentences < 2) return;
+  backgroundTimer = window.setTimeout(() => {
+    if (state.result && state.indexedKey !== state.key) ensureIndex().catch(() => {});
+  }, 1500);
 }
 
 async function renderSummary() {
@@ -781,3 +873,8 @@ $('#theme').addEventListener('click', () => {
 const saved = store.get('text');
 if (saved) setText(saved);
 else renderAll();
+
+// abrir qualquer recurso de IA já começa a carregar o modelo (quando ele está em cache)
+document.querySelectorAll('[data-tab=ai], [data-tab=search], [data-tab=summary], [data-v=ai]').forEach((el) =>
+  el.addEventListener('pointerenter', warmEmbedder, { once: true }),
+);

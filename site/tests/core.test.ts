@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 import { analyze } from '../src/core/analyze.ts';
 import { summarize } from '../src/core/summarize.ts';
 import { search } from '../src/core/search.ts';
-import { syllables, sentences } from '../src/core/text.ts';
+import { sentences } from '../src/core/text.ts';
+import { syllables } from '../src/core/readability.ts';
 
 test('sílabas aproximadas', () => {
   assert.equal(syllables('casa'), 2);

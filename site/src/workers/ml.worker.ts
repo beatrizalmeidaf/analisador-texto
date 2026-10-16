@@ -8,6 +8,12 @@ import type { MLRequest, MLResponse, SentimentResult, NerEntity } from './protoc
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
+// Com cross-origin isolation (cabeçalhos COOP/COEP do service worker coi-sw.js)
+// o ONNX Runtime pode distribuir a inferência entre vários núcleos.
+if (self.crossOriginIsolated && env.backends.onnx?.wasm) {
+  env.backends.onnx.wasm.numThreads = Math.max(1, Math.min(8, (navigator.hardwareConcurrency || 4) - 1));
+}
+
 const EMBED_MODEL = 'Xenova/paraphrase-multilingual-MiniLM-L12-v2';
 const SENTIMENT_MODEL = 'Xenova/distilbert-base-multilingual-cased-sentiments-student';
 /** limite de frases indexadas: acima disso amostramos de forma uniforme pelo texto */
@@ -271,6 +277,10 @@ self.onmessage = async (e: MessageEvent<MLRequest>) => {
         break;
       case 'ner':
         post({ type: 'ner', id: msg.id, entities: await ner(msg.id, msg.text) });
+        break;
+      case 'warm':
+        await getEmbedder(msg.id);
+        post({ type: 'warmed', id: msg.id });
         break;
     }
   } catch (err) {

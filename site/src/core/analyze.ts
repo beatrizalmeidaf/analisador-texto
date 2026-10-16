@@ -1,4 +1,5 @@
-import { sentences, syllables, words, isContentWord, type Sentence } from './text.ts';
+import { sentences, words, isContentWord, type Sentence } from './text.ts';
+import { readability, type Readability } from './readability.ts';
 
 export interface Term {
   term: string;
@@ -22,8 +23,9 @@ export interface Stats {
   lexicalDiversity: number;
   /** palavras que aparecem uma única vez */
   hapax: number;
-  /** Flesch adaptado ao português (Martins et al., 1996) */
+  /** Flesch adaptado ao português (Martins et al., 1996) — atalho para readability.flesch */
   flesch: number;
+  readability: Readability;
   readingMinutes: number;
   speakingMinutes: number;
   /** histograma de comprimento: índice = nº de letras (último bucket agrupa 15+) */
@@ -138,14 +140,8 @@ export function analyze(text: string): Analysis {
   const histogram = new Array(HIST_MAX + 1).fill(0);
   for (const l of lengths) histogram[Math.min(l, HIST_MAX)]++;
 
-  let syl = 0;
-  for (const w of lower) syl += syllables(w);
-
   const nWords = allWords.length;
-  const nSents = Math.max(sents.length, nWords ? 1 : 0);
-  const wps = nSents ? nWords / nSents : 0;
-  const spw = nWords ? syl / nWords : 0;
-  const flesch = nWords ? Math.max(0, Math.min(100, 248.835 - 1.015 * wps - 84.6 * spw)) : 0;
+  const read = readability(sents);
 
   let hapax = 0;
   for (const c of allCounts.values()) if (c === 1) hapax++;
@@ -164,13 +160,14 @@ export function analyze(text: string): Analysis {
       sentences: sents.length,
       paragraphs: new Set(sents.map((s) => s.para)).size,
       wordLength: lengthStats(lengths),
-      wordsPerSentence: wps,
-      syllablesPerWord: spw,
+      wordsPerSentence: read.wordsPerSentence,
+      syllablesPerWord: read.syllablesPerWord,
       // TTR cai naturalmente em textos longos; usamos a média em janelas de 1000
       // palavras (MSTTR) para que textos de tamanhos diferentes sejam comparáveis
       lexicalDiversity: msttr(lower, 1000),
       hapax,
-      flesch,
+      flesch: read.flesch,
+      readability: read,
       readingMinutes: nWords / 230,
       speakingMinutes: nWords / 140,
       lengthHistogram: histogram,
@@ -192,29 +189,4 @@ function msttr(ws: string[], window: number): number {
     n++;
   }
   return sum / n;
-}
-
-export function readabilityLabel(flesch: number): { label: string; detail: string } {
-  if (flesch >= 75) return { label: 'Muito fácil', detail: 'Adequado a leitores do ensino fundamental (anos iniciais).' };
-  if (flesch >= 50) return { label: 'Fácil', detail: 'Adequado a leitores do ensino fundamental (anos finais).' };
-  if (flesch >= 25) return { label: 'Difícil', detail: 'Adequado a leitores do ensino médio ou universitário.' };
-  return { label: 'Muito difícil', detail: 'Texto denso, típico de material acadêmico ou técnico especializado.' };
-}
-
-export function lengthInterpretation(mean: number, std: number): string {
-  const m =
-    mean < 4
-      ? 'Predominam palavras curtas, sugerindo linguagem mais informal ou simples.'
-      : mean <= 6
-        ? 'Equilíbrio entre palavras curtas e longas, comum em textos jornalísticos e relatórios.'
-        : 'Palavras longas e complexas, indicando possível natureza técnica ou acadêmica.';
-  const s =
-    std < 1.5
-      ? 'Os tamanhos variam pouco: estilo uniforme e direto.'
-      : std <= 2.5
-        ? 'Variação moderada, típica de textos formais bem estruturados.'
-        : std <= 3
-          ? 'Alta variação: mistura frequente de palavras curtas e longas.'
-          : 'Variação muito alta: vocabulário bastante heterogêneo.';
-  return `${m} ${s}`;
 }

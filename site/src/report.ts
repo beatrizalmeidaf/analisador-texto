@@ -173,7 +173,7 @@ export function generateHtmlReport(data: ReportData): string {
       <div class="metric"><div class="val">${s.uniqueWords.toLocaleString('pt-BR')}</div><div class="lbl">Distintas</div></div>
       <div class="metric"><div class="val">${s.sentences.toLocaleString('pt-BR')}</div><div class="lbl">Frases</div></div>
       <div class="metric"><div class="val">${s.paragraphs.toLocaleString('pt-BR')}</div><div class="lbl">Parágrafos</div></div>
-      <div class="metric"><div class="val">${s.flesch.toFixed(1)}</div><div class="lbl">Legibilidade (Flesch)</div></div>
+      <div class="metric"><div class="val">${s.flesch.toFixed(1)}</div><div class="lbl">Legibilidade (Flesch) · ${s.readability.band.label}</div></div>
       <div class="metric"><div class="val">${(s.lexicalDiversity * 100).toFixed(1)}%</div><div class="lbl">Diversidade lexical</div></div>
     </div>
   </div>

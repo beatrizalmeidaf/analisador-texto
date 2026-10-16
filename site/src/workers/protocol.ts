@@ -54,7 +54,8 @@ export type MLRequest =
   | { type: 'classify'; id: number; key: string }
   | { type: 'semantic-summary'; id: number; key: string; k: number }
   | { type: 'sentiment'; id: number; key: string; sentences: string[] }
-  | { type: 'ner'; id: number; text: string };
+  | { type: 'ner'; id: number; text: string }
+  | { type: 'warm'; id: number };
 
 export type MLResponse =
   | { type: 'progress'; id: number; stage: 'download' | 'compute'; label: string; progress: number }
@@ -64,4 +65,5 @@ export type MLResponse =
   | { type: 'summary'; id: number; indices: number[] }
   | { type: 'sentiment'; id: number; result: SentimentResult }
   | { type: 'ner'; id: number; entities: NerEntity[] }
+  | { type: 'warmed'; id: number }
   | { type: 'error'; id: number; message: string };

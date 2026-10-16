@@ -229,3 +229,22 @@ mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 2
 .quote { border-left: 3px solid var(--grid); padding: 2px 0 2px 10px; margin: 8px 0; font-size: 0.9rem; }
 .quote.pos { border-color: var(--series-1); }
 .quote.neg { border-color: var(--neg); }
+
+/* legibilidade */
+.read-lead { margin: 2px 0 8px; color: var(--ink-2); }
+.bands { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin: 8px 0 22px; }
+.bands span {
+  background: var(--surface-2); color: var(--muted); font-size: 0.72rem; text-align: center;
+  padding: 5px 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.bands span:first-child { border-radius: 4px 0 0 4px; }
+.bands span:nth-child(4) { border-radius: 0 4px 4px 0; }
+.bands span.on { background: var(--series-1); color: #fff; font-weight: 600; }
+.bands .marker {
+  position: absolute; top: calc(100% + 3px); width: 0; height: 0; transform: translateX(-50%);
+  border: 6px solid transparent; border-bottom-color: var(--ink); border-top: 0;
+}
+.stat-grid dd.hint { font-size: 0.75rem; font-weight: 400; color: var(--muted); }
+.warn { background: var(--surface-2); border-left: 3px solid var(--neg); border-radius: 4px; padding: 8px 10px; color: var(--ink-2); }
+.note p { margin: 0 0 6px; }
+.note p:last-child { margin: 0; }
