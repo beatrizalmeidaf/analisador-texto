@@ -173,18 +173,18 @@ def gerar_html_relatorio(
   </style>
 </head>
 <body>
-  <h1>📊 Relatório de Análise de Texto</h1>
+  <h1>Relatório de Análise de Texto</h1>
   <p class="meta">Gerado em {now} · Analisador de Texto</p>
 
   <!-- PRÉVIA -->
   <div class="card">
-    <h2>📄 Prévia do Texto</h2>
+    <h2>Prévia do Texto</h2>
     <p class="preview">{preview}</p>
   </div>
 
   <!-- MÉTRICAS -->
   <div class="card">
-    <h2>📏 Métricas Estatísticas</h2>
+    <h2>Métricas Estatísticas</h2>
     <div class="metrics">
       <div class="metric"><div class="val">{total_tokens:,}</div><div class="lbl">Tokens</div></div>
       <div class="metric"><div class="val">{vocab_size:,}</div><div class="lbl">Vocabulário único</div></div>
@@ -195,30 +195,30 @@ def gerar_html_relatorio(
   </div>
 
   <!-- CLASSIFICAÇÃO -->
-  {"<div class='card'><h2>🏷️ Classificação de Gênero</h2>" + class_html + "</div>" if class_html else ""}
+  {"<div class='card'><h2>Classificação de Gênero</h2>" + class_html + "</div>" if class_html else ""}
 
   <!-- SENTIMENTO -->
   <div class="card">
-    <h2>💬 Análise de Sentimento</h2>
+    <h2>Análise de Sentimento</h2>
     {sent_geral_html}
     {"<table><thead><tr><th>Trecho</th><th>Sentimento</th><th>Confiança</th></tr></thead><tbody>" + sent_chunks_html + "</tbody></table>" if sent_chunks_html else "<p><em>Análise de sentimento não realizada.</em></p>"}
   </div>
 
   <!-- FRASES-CHAVE -->
   <div class="card">
-    <h2>🔑 Frases-Chave</h2>
+    <h2>Frases-Chave</h2>
     {kp_html if kp_html else "<p><em>Extração de frases-chave não realizada.</em></p>"}
   </div>
 
   <!-- RESUMO -->
   <div class="card">
-    <h2>📝 Resumo Automático</h2>
+    <h2>Resumo Automático</h2>
     {resumo_html}
   </div>
 
   <!-- TOP PALAVRAS -->
   <div class="card">
-    <h2>📊 Top 15 Palavras Mais Frequentes</h2>
+    <h2>Top 15 Palavras Mais Frequentes</h2>
     <table>
       <thead><tr><th>Palavra</th><th>Ocorrências</th></tr></thead>
       <tbody>{top_words_rows}</tbody>
@@ -227,7 +227,7 @@ def gerar_html_relatorio(
 
   <!-- TF-IDF -->
   <div class="card">
-    <h2>🔎 Top 10 Termos TF-IDF</h2>
+    <h2>Top 10 Termos TF-IDF</h2>
     <table>
       <thead><tr>{tfidf_header}</tr></thead>
       <tbody>{tfidf_rows}</tbody>
@@ -236,7 +236,7 @@ def gerar_html_relatorio(
 
   <!-- VISUALIZAÇÕES -->
   <div class="card">
-    <h2>🖼️ Visualizações</h2>
+    <h2>Visualizações</h2>
     <h3>Nuvem de Palavras</h3>{img_wordcloud}
     <h3 style="margin-top:20px;">Frequência de Palavras</h3>{img_freq}
     <h3 style="margin-top:20px;">TF-IDF</h3>{img_tfidf}
