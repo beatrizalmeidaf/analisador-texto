@@ -81,19 +81,9 @@ def process_text_chunked(text):
     
     return ' '.join(all_tokens), all_tokens, all_word_counts, metrics, df_tfidf
 
-def save_temp_text(text):
-    """ Salva o arquivo de forma temporária """
-    data_dir = os.path.join(root_dir, 'data')
-    os.makedirs(data_dir, exist_ok=True)
-    file_path = os.path.join(data_dir, 'teste.txt')
-    with open(file_path, 'w', encoding='utf-8') as f:
-        f.write(text)
-    return file_path
-
 def process_text(text):
     """ Faz os processamentos necessários no texto """
-    save_temp_text(text)
-    cleaned_text = clean_text()
+    cleaned_text = clean_text(text)
     tokens = tokenizer(cleaned_text)
     word_counts = word_counter(tokens)
     metrics = calculate_metrics(tokens)
@@ -314,7 +304,7 @@ def render_question(text_input):
     if question:
         st.info("O processamento pode levar alguns segundos. Por favor, aguarde...")
         try:
-            answer = answer_question(text_input[:512])
+            answer = answer_question(text_input, question)
             st.subheader("Resposta:")
             st.write(answer)
         except Exception as e:
