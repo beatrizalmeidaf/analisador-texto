@@ -45,6 +45,9 @@
           <button role="tab" data-tab="summary">Resumo</button>
           <button role="tab" data-tab="search">Busca</button>
           <button role="tab" data-tab="ai">Classificação e sentimento</button>
+          <button role="tab" data-tab="keyphrases">Frases-chave</button>
+          <button role="tab" data-tab="ner">Entidades</button>
+          <button role="tab" data-tab="export">↓ Exportar</button>
         </nav>
 
         <div class="card panel" data-panel="stats" role="tabpanel">
@@ -121,6 +124,28 @@
               <div id="sentiment-out"></div>
             </div>
           </div>
+        </div>
+
+        <div class="card panel" data-panel="keyphrases" role="tabpanel" hidden>
+          <div class="panel-head">
+            <label class="range">Frases: <input id="kp-n" type="range" min="5" max="30" value="12" /> <output id="kp-n-out">12</output></label>
+          </div>
+          <p class="muted small" id="kp-help">Extrai as expressões mais representativas usando TF-IDF entre frases + re-ranking MMR para diversidade. Zero latência — sem modelo de IA.</p>
+          <div id="kp-out"></div>
+        </div>
+
+        <div class="card panel" data-panel="ner" role="tabpanel" hidden>
+          <p class="muted small">Detecta pessoas, locais e organizações usando BERT multilingual (modelo NER ~185 MB, baixado na primeira vez). Analisa os primeiros 2000 caracteres.</p>
+          <button id="run-ner" class="btn" type="button" style="margin:8px 0;">Detectar entidades</button>
+          <div id="ner-progress"></div>
+          <div id="ner-out"></div>
+        </div>
+
+        <div class="card panel" data-panel="export" role="tabpanel" hidden>
+          <p class="muted small">Gera um relatório HTML completo com todas as análises realizadas nesta sessão. O arquivo é gerado localmente no seu navegador.</p>
+          <p class="muted small" style="margin-top:6px;">Execute as análises desejadas (resumo, frases-chave, sentimento, entidades) antes de exportar para incluí-las no relatório.</p>
+          <button id="run-export" class="btn" type="button" style="margin-top:12px;">⬇ Baixar relatório HTML</button>
+          <div id="export-status" style="margin-top:8px;" class="muted small"></div>
         </div>
       </section>
     </main>

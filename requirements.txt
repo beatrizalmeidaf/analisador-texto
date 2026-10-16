@@ -13,7 +13,9 @@ charset-normalizer==3.4.2
 click==8.1.8
 colorama==0.4.6
 contourpy==1.3.2
-ctransformers
+keybert
+sentence-transformers
+pdfkit
 cycler==0.12.1
 eval_type_backport==0.2.2
 filelock==3.18.0
@@ -38,8 +40,7 @@ jsonschema-specifications==2025.4.1
 keras==3.9.2
 kiwisolver==1.4.8
 libclang==18.1.1
-langchain
-langchain_community
+# langchain and langchain_community removed (summarizer migrated to TextRank)
 Markdown==3.8
 markdown-it-py==3.0.0
 MarkupSafe==3.0.2

@@ -15,6 +15,9 @@ from src.classification.model import classificador, create_plotly_visualization
 from src.analysis.visualization import plot_metrics, generate_wordcloud, plot_tfidf, plot_word_frequency
 from src.question.question import answer_question
 from src.summarization.summarizer import resumir_texto
+from src.analysis.sentiment import analisar_sentimento, sentimento_geral as calcular_sentimento_geral
+from src.analysis.keyphrases import extrair_frases_chave
+from src.analysis.report import gerar_html_relatorio, exportar_pdf
 # from src.representation import bow, cooccurrence
 
 st.set_page_config(layout="wide")
@@ -134,6 +137,14 @@ def initialize_session_state():
         st.session_state.viz_type = "Nuvem de Palavras"
     if 'tab' not in st.session_state:
         st.session_state.tab = "Estatísticas"
+    if 'sentimentos' not in st.session_state:
+        st.session_state.sentimentos = None
+    if 'keyphrases' not in st.session_state:
+        st.session_state.keyphrases = None
+    if 'resumo_frases' not in st.session_state:
+        st.session_state.resumo_frases = None
+    if 'classificacao_result' not in st.session_state:
+        st.session_state.classificacao_result = None
 
 def handle_viz_selection(viz_name):
     """ Seleção das abas para cada tipo de gráficos """
@@ -217,22 +228,46 @@ def render_classification_section(tokens):
             st.warning("Não foi possível classificar o texto. Verifique se o texto possui conteúdo suficiente ou tente novamente.")
 
 def render_summarization_section(texto_completo):
-    """Renderiza a seção de sumarização separadamente"""
+    """Renderiza a seção de sumarização com TextRank (estatístico ou semântico)."""
     st.subheader("Sumarização do Texto")
-    
+
     st.markdown("""
-    Essa ferramenta utiliza o modelo do Recogna NLP para criar um resumo conciso 
-    do texto analisado, mantendo os pontos principais.
+    Extração automática das frases mais relevantes do texto usando **TextRank**.
+    Escolha o modo conforme sua necessidade de velocidade vs. qualidade semântica.
     """)
-    
-    if st.button("Gerar Resumo"):
-        st.info("O processamento pode levar alguns segundos. Por favor, aguarde...")
+
+    col_mode, col_n = st.columns([2, 1])
+    with col_mode:
+        modo = st.radio(
+            "Modo de sumarização",
+            ["Estatístico (instantâneo)", "Semântico (IA)"],
+            horizontal=True,
+            help="Estatístico: TextRank + TF-IDF, sem GPU.\nSemântico: TextRank + MiniLM (~118 MB no primeiro uso)."
+        )
+    with col_n:
+        n_frases = st.slider("Frases", min_value=2, max_value=10, value=5)
+
+    mode_key = "semantico" if "Semântico" in modo else "estatistico"
+
+    if modo == "Semântico (IA)":
+        st.caption("Usa o modelo MiniLM (~118 MB no primeiro uso). Considera frases parecidas mesmo quando usam palavras diferentes.")
+
+    if st.button("Gerar Resumo", key="btn_resumo"):
         with st.spinner("Gerando resumo..."):
             try:
-                resumo = resumir_texto(texto_completo)
-                st.write(resumo)
+                frases = resumir_texto(texto_completo, n_sentences=n_frases, mode=mode_key)
+                st.session_state.resumo_frases = frases
             except Exception as e:
                 st.error(f"Erro ao gerar resumo: {str(e)}")
+
+    if st.session_state.resumo_frases:
+        for i, frase in enumerate(st.session_state.resumo_frases, 1):
+            st.markdown(f"{i}. {frase}")
+        if st.button("📋 Copiar resumo", key="btn_copy_resumo"):
+            resumo_txt = "\n".join(
+                f"{i}. {f}" for i, f in enumerate(st.session_state.resumo_frases, 1)
+            )
+            st.code(resumo_txt, language=None)
 
 def get_genre_description(genre_name):
     """Retorna uma descrição detalhada para o gênero textual específico."""
@@ -402,14 +437,18 @@ def main():
     
     if st.session_state.processed_data is not None:
         cleaned_text, tokens, word_counts, metrics, df_tfidf = st.session_state.processed_data
-        
+
+        TABS = [
+            "Estatísticas", "Visualizações", "Busca e Informações",
+            "Classificação", "Sumarização", "Sentimento", "Frases-Chave", "Exportar Relatório"
+        ]
+
         st.session_state.tab = st.radio(
             "",
-            ["Estatísticas", "Visualizações", "Busca e Informações", "Classificação", "Sumarização"],
+            TABS,
             horizontal=True,
             label_visibility="hidden",
-            index=["Estatísticas", "Visualizações", "Busca e Informações", "Classificação", "Sumarização"].index(st.session_state.tab) 
-            if st.session_state.tab in ["Estatísticas", "Visualizações", "Busca e Informações", "Classificação", "Sumarização"] else 0
+            index=TABS.index(st.session_state.tab) if st.session_state.tab in TABS else 0
         )
         
         st.divider()
@@ -523,13 +562,161 @@ def main():
         
         elif st.session_state.tab == "Classificação":
             render_classification_section(tokens)
-            
+
         elif st.session_state.tab == "Sumarização":
             texto_completo = " ".join(tokens)
             render_summarization_section(texto_completo)
 
         elif st.session_state.tab == "Busca e Informações":
             render_question(text_input)
+
+        elif st.session_state.tab == "Sentimento":
+            st.subheader("Análise de Sentimento")
+            st.markdown("""
+            Classifica cada trecho do texto como **Positivo**, **Negativo** ou **Neutro**
+            usando o modelo compacto `distilbert-base-multilingual-cased-sentiments-student`.
+            Latência típica: < 1 segundo por trecho em CPU.
+            """)
+            if st.button("Analisar Sentimento", key="btn_sent"):
+                with st.spinner("Analisando sentimento..."):
+                    try:
+                        texto_para_sent = text_input or " ".join(tokens)
+                        resultados = analisar_sentimento(texto_para_sent)
+                        st.session_state.sentimentos = resultados
+                    except Exception as e:
+                        st.error(f"Erro: {str(e)}")
+
+            if st.session_state.sentimentos:
+                geral = calcular_sentimento_geral(st.session_state.sentimentos)
+                cor_map = {"Positivo": "green", "Negativo": "red", "Neutro": "gray"}
+                cor = cor_map.get(geral["label"], "gray")
+                st.markdown(
+                    f"### Sentimento Geral: :{cor}[{geral['emoji']} {geral['label']}] "
+                    f"({geral['score']:.1%} de confiança)"
+                )
+                st.divider()
+                for r in st.session_state.sentimentos:
+                    cor_r = cor_map.get(r["label"], "gray")
+                    with st.container():
+                        col_sent, col_lbl = st.columns([5, 1])
+                        with col_sent:
+                            st.markdown(f"> {r['texto'][:300]}{'…' if len(r['texto'])>300 else ''}")
+                        with col_lbl:
+                            st.markdown(f":{cor_r}[**{r['emoji']} {r['label']}**]  \n{r['score']:.0%}")
+
+        elif st.session_state.tab == "Frases-Chave":
+            st.subheader("Extração de Frases-Chave")
+            st.markdown("""
+            Identifica as frases (uni a trigramas) mais representativas do texto usando
+            **KeyBERT** + `all-MiniLM-L6-v2`. Diversity MMR garante variedade nos resultados.
+            """)
+            col_n2, col_div, col_ng = st.columns(3)
+            with col_n2:
+                top_n = st.slider("Número de frases", 5, 20, 10, key="kp_n")
+            with col_div:
+                diversity = st.slider("Diversidade", 0.0, 1.0, 0.5, 0.05, key="kp_div")
+            with col_ng:
+                ngram_max = st.slider("Max n-grama", 1, 4, 3, key="kp_ng")
+
+            if st.button("Extrair Frases-Chave", key="btn_kp"):
+                with st.spinner("Extraindo frases-chave..."):
+                    try:
+                        texto_kp = text_input or " ".join(tokens)
+                        kp = extrair_frases_chave(
+                            texto_kp,
+                            top_n=top_n,
+                            ngram_range=(1, ngram_max),
+                            diversity=diversity,
+                        )
+                        st.session_state.keyphrases = kp
+                    except Exception as e:
+                        st.error(f"Erro: {str(e)}")
+
+            if st.session_state.keyphrases:
+                st.markdown("**Frases mais relevantes:**")
+                for kp_item in st.session_state.keyphrases:
+                    score = kp_item["score"]
+                    bar = int(score * 20)
+                    st.markdown(
+                        f"{'█' * bar}{'░' * (20 - bar)} `{score:.3f}` — **{kp_item['frase']}**"
+                    )
+
+        elif st.session_state.tab == "Exportar Relatório":
+            st.subheader("Exportar Relatório")
+            st.markdown("""
+            Gera um relatório completo com todas as análises realizadas em **HTML** ou **PDF**.
+            O relatório inclui métricas, frases-chave, sentimento, resumo, gráficos e TF-IDF.
+            """)
+
+            formato = st.radio("Formato", ["HTML", "PDF"], horizontal=True, key="rpt_fmt")
+
+            if st.button("Gerar Relatório", key="btn_rpt"):
+                with st.spinner("Gerando relatório..."):
+                    try:
+                        texto_completo_rpt = text_input or " ".join(tokens)
+
+                        # figuras (tentamos gerar, toleramos falhas)
+                        figs = {}
+                        try:
+                            figs["wordcloud"] = generate_wordcloud(tokens)
+                        except Exception:
+                            pass
+                        try:
+                            figs["tfidf"] = plot_tfidf(df_tfidf)
+                        except Exception:
+                            pass
+                        try:
+                            figs["freq"] = plot_word_frequency(word_counts)
+                        except Exception:
+                            pass
+
+                        html_str = gerar_html_relatorio(
+                            texto_original=texto_completo_rpt,
+                            metrics=metrics,
+                            word_counts=dict(word_counts),
+                            df_tfidf=df_tfidf,
+                            resumo=st.session_state.resumo_frases,
+                            sentimentos=st.session_state.sentimentos,
+                            sentimento_geral=calcular_sentimento_geral(st.session_state.sentimentos)
+                                if st.session_state.sentimentos else None,
+                            keyphrases=st.session_state.keyphrases,
+                            figs=figs,
+                        )
+
+                        if formato == "HTML":
+                            st.download_button(
+                                "⬇️ Baixar HTML",
+                                data=html_str.encode("utf-8"),
+                                file_name="relatorio_analise.html",
+                                mime="text/html",
+                                key="dl_html",
+                            )
+                            with st.expander("Pré-visualizar HTML"):
+                                st.components.v1.html(html_str, height=600, scrolling=True)
+                        else:
+                            pdf_bytes = exportar_pdf(html_str)
+                            if pdf_bytes:
+                                st.download_button(
+                                    "⬇️ Baixar PDF",
+                                    data=pdf_bytes,
+                                    file_name="relatorio_analise.pdf",
+                                    mime="application/pdf",
+                                    key="dl_pdf",
+                                )
+                            else:
+                                st.warning(
+                                    "PDF não disponível: instale `pdfkit` + wkhtmltopdf ou `weasyprint`.\n\n"
+                                    "Exibindo HTML como alternativa."
+                                )
+                                st.download_button(
+                                    "⬇️ Baixar HTML",
+                                    data=html_str.encode("utf-8"),
+                                    file_name="relatorio_analise.html",
+                                    mime="text/html",
+                                    key="dl_html_fallback",
+                                )
+                    except Exception as e:
+                        st.error(f"Erro ao gerar relatório: {str(e)}")
     
     with st.expander("Sobre o Analisador de Texto"):
         st.write("""
@@ -540,7 +727,10 @@ def main():
         4. **Visualizações**: Gera gráficos e nuvem de palavras
         5. **Buscas e Informações**: Permite fazer perguntas interpretativas sobre o texto
         6. **Classificação**: Identifica o gênero textual usando um modelo de aprendizado profundo
-        7. **Sumarização**: Cria um resumo automático do texto
+        7. **Sumarização**: Resumo extrativo via TextRank (modo estatístico instantâneo ou semântico com MiniLM)
+        8. **Análise de Sentimento**: Classifica trechos como Positivo / Negativo / Neutro (DistilBERT multilingual)
+        9. **Frases-Chave**: Extrai frases representativas com KeyBERT + MiniLM
+        10. **Exportar Relatório**: Gera relatório completo em HTML ou PDF
         """)
 
 if __name__ == '__main__':

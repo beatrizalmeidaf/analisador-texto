@@ -5,6 +5,8 @@ import type { AnalysisRequest, AnalysisResponse, AnalysisResult, MLRequest, MLRe
 import { readabilityLabel, lengthInterpretation, type Term } from './core/analyze.ts';
 import { GENRES } from './genres.ts';
 import { $, h, fmt, pct, duration, hbars, columns, stack, progress, highlighted, cssVar } from './ui.ts';
+import { generateHtmlReport, downloadHtml } from './report.ts';
+import type { Keyphrase, NerEntity, SentimentResult, Genre } from './workers/protocol.ts';
 
 // ---------------------------------------------------------------- workers
 
@@ -45,7 +47,7 @@ const ml: ReturnType<typeof rpc<MLRequest, MLResponse>> = (msg, onProgress) => {
 
 // ---------------------------------------------------------------- estado
 
-type Tab = 'stats' | 'words' | 'cloud' | 'summary' | 'search' | 'ai';
+type Tab = 'stats' | 'words' | 'cloud' | 'summary' | 'search' | 'ai' | 'keyphrases' | 'ner' | 'export';
 
 const state = {
   text: '',
@@ -57,6 +59,12 @@ const state = {
   summaryMode: 'stat' as 'stat' | 'ai',
   searchMode: 'exact' as 'exact' | 'ai',
   indexedKey: '',
+  // cached results for report
+  lastSummaryLines: [] as string[],
+  lastKeyphrases: null as Keyphrase[] | null,
+  lastSentiment: null as SentimentResult | null,
+  lastGenres: null as Genre[] | null,
+  lastEntities: null as NerEntity[] | null,
 };
 
 const store = {
@@ -240,13 +248,13 @@ segmented<typeof state.searchMode>('#search-mode', (v) => {
 
 function renderAll() {
   renderTiles();
-  state.dirty = new Set(['stats', 'words', 'cloud', 'summary', 'search', 'ai']);
+  state.dirty = new Set(['stats', 'words', 'cloud', 'summary', 'search', 'ai', 'keyphrases', 'ner', 'export']);
   renderPanel(state.tab);
 }
 
 function renderPanel(tab: Tab) {
   state.dirty.delete(tab);
-  ({ stats: renderStats, words: renderWords, cloud: renderCloud, summary: renderSummary, search: renderSearch, ai: renderAI })[tab]();
+  ({ stats: renderStats, words: renderWords, cloud: renderCloud, summary: renderSummary, search: renderSearch, ai: renderAI, keyphrases: renderKeyphrases, ner: renderNer, export: renderExport })[tab]();
 }
 
 const empty = () => h('p', { class: 'empty' }, 'Digite ou carregue um texto para ver a análise.');
@@ -466,6 +474,12 @@ $('#copy-summary').addEventListener('click', async (e) => {
   setTimeout(() => (btn.textContent = 'Copiar resumo'), 1500);
 });
 
+// cache lastSummary into state for the report
+const _origLastSummary = lastSummary;
+Object.defineProperty(lastSummary, 'push', {
+  value: (...args: string[]) => { state.lastSummaryLines = [..._origLastSummary, ...args]; return Array.prototype.push.call(lastSummary, ...args); }
+});
+
 // ---------------------------------------------------------------- busca
 
 const query = $<HTMLInputElement>('#query');
@@ -572,6 +586,7 @@ $('#run-genre').addEventListener('click', (e) =>
       const key = await ensureIndex(prog);
       const res = await ml({ type: 'classify', key });
       if (res.type !== 'genres') return;
+      state.lastGenres = res.genres; // cache for report
       const top = res.genres[0];
       const def = GENRES.find((g) => g.label === top.label);
       out.dataset.key = key;
@@ -601,6 +616,7 @@ $('#run-sentiment').addEventListener('click', (e) =>
       const res = await ml({ type: 'sentiment', key, sentences: r.sentences.map((s) => s.text) }, (label, p) => progress(prog, label, p));
       prog.replaceChildren();
       if (res.type !== 'sentiment') return;
+      state.lastSentiment = res.result; // cache for report
       const { distribution: d, mostPositive, mostNegative, analyzed } = res.result;
       const quote = (cls: string, i: number) => h('div', { class: `quote ${cls}` }, r.sentences[i]?.text ?? '');
       out.dataset.key = key;
@@ -622,6 +638,129 @@ $('#run-sentiment').addEventListener('click', (e) =>
     }
   }),
 );
+
+
+// ---------------------------------------------------------------- frases-chave
+
+const kpN = $<HTMLInputElement>('#kp-n');
+kpN.addEventListener('input', () => {
+  $<HTMLOutputElement>('#kp-n-out').value = kpN.value;
+  renderKeyphrases();
+});
+
+async function renderKeyphrases() {
+  const out = $('#kp-out');
+  if (!state.result) return out.replaceChildren(empty());
+  const n = Number(kpN.value);
+  const res = await analysis({ type: 'keyphrases', topN: n });
+  if (res.type !== 'keyphrases') return;
+  state.lastKeyphrases = res.phrases; // cache for report
+  if (!res.phrases.length) return out.replaceChildren(h('p', { class: 'empty' }, 'Nada a mostrar.'));
+  const max = res.phrases[0].score || 1;
+  out.replaceChildren(
+    hbars(
+      res.phrases.map((kp) => ({
+        label: kp.phrase,
+        value: kp.score / max,
+        display: kp.score.toFixed(3),
+        tooltip: `"${kp.phrase}" — relevância ${kp.score.toFixed(3)}`,
+      })),
+    ),
+  );
+}
+
+// ---------------------------------------------------------------- NER
+
+const ENTITY_COLORS: Record<string, string> = {
+  PER: '#6366f1', ORG: '#0891b2', LOC: '#16a34a', MISC: '#d97706',
+};
+const ENTITY_LABELS: Record<string, string> = {
+  PER: 'Pessoa', ORG: 'Organização', LOC: 'Local', MISC: 'Misc',
+};
+
+function renderNer() {
+  $<HTMLButtonElement>('#run-ner').disabled = !state.result;
+}
+
+$('#run-ner').addEventListener('click', (e) =>
+  withButton(e.currentTarget as HTMLButtonElement, async () => {
+    const out = $('#ner-out');
+    const prog = $('#ner-progress');
+    if (!state.result) return;
+    try {
+      progress(prog, 'Preparando modelo NER', null);
+      const res = await ml({ type: 'ner', text: state.text }, (label, p) => progress(prog, label, p));
+      prog.replaceChildren();
+      if (res.type !== 'ner') return;
+      state.lastEntities = res.entities;
+      if (!res.entities.length) {
+        out.replaceChildren(h('p', { class: 'empty' }, 'Nenhuma entidade detectada no trecho analisado.'));
+        return;
+      }
+      // Group by entity type
+      const byType = new Map<string, string[]>();
+      for (const e of res.entities) {
+        const list = byType.get(e.entity) ?? [];
+        list.push(e.word);
+        byType.set(e.entity, list);
+      }
+      const sections: HTMLElement[] = [];
+      for (const [type, words] of byType) {
+        const color = ENTITY_COLORS[type] ?? '#6b7280';
+        const label = ENTITY_LABELS[type] ?? type;
+        sections.push(
+          h('div', { class: 'ai-block' },
+            h('div', { class: 'section-title', style: `color:${color}` }, label),
+            h('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;' },
+              ...[...new Set(words)].map((w) =>
+                h('span', {
+                  style: `padding:3px 10px;border-radius:20px;font-size:0.88rem;
+                    background:${color}18;border:1px solid ${color};color:${color};`
+                }, w)
+              )
+            )
+          )
+        );
+      }
+      out.replaceChildren(
+        h('p', { class: 'muted small' }, `${res.entities.length} entidade${res.entities.length > 1 ? 's' : ''} detectada${res.entities.length > 1 ? 's' : ''} nos primeiros 2000 caracteres.`),
+        h('div', { class: 'ai-grid' }, ...sections)
+      );
+    } catch (err) {
+      prog.replaceChildren(h('p', { class: 'error' }, `Erro: ${(err as Error).message}`));
+    }
+  }),
+);
+
+// ---------------------------------------------------------------- exportar relatório
+
+function renderExport() {
+  $<HTMLButtonElement>('#run-export').disabled = !state.result;
+}
+
+$('#run-export').addEventListener('click', () => {
+  const r = state.result;
+  if (!r) return;
+  const statusEl = $('#export-status');
+  statusEl.textContent = 'Gerando relatório…';
+  try {
+    const html = generateHtmlReport({
+      text: state.text,
+      result: r,
+      summaryLines: lastSummary.length ? [...lastSummary] : undefined,
+      keyphrases: state.lastKeyphrases ?? undefined,
+      sentiment: state.lastSentiment ?? undefined,
+      genres: state.lastGenres ?? undefined,
+      entities: state.lastEntities ?? undefined,
+      cloudCanvas: $<HTMLCanvasElement>('#cloud'),
+    });
+    downloadHtml(html);
+    statusEl.textContent = 'Relatório baixado com sucesso!';
+    setTimeout(() => (statusEl.textContent = ''), 3000);
+  } catch (err) {
+    statusEl.textContent = `Erro ao gerar relatório: ${(err as Error).message}`;
+  }
+});
 
 // ---------------------------------------------------------------- tema
 

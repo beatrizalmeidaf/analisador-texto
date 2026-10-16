@@ -1,8 +1,8 @@
 /// <reference lib="webworker" />
-import { pipeline, env, type FeatureExtractionPipeline, type TextClassificationPipeline } from '@huggingface/transformers';
+import { pipeline, env, type FeatureExtractionPipeline, type TextClassificationPipeline, type TokenClassificationPipeline } from '@huggingface/transformers';
 import { textRank, pickSentences, summaryFilter } from '../core/summarize.ts';
 import { GENRES } from '../genres.ts';
-import type { MLRequest, MLResponse, SentimentResult } from './protocol.ts';
+import type { MLRequest, MLResponse, SentimentResult, NerEntity } from './protocol.ts';
 
 // os modelos vêm do Hugging Face Hub e ficam no Cache Storage do navegador
 env.allowLocalModels = false;
@@ -57,6 +57,20 @@ function getSentiment(id: number) {
     throw err;
   }) as Promise<TextClassificationPipeline>;
   return sentimentModel;
+}
+
+const NER_MODEL = 'Xenova/bert-base-multilingual-cased-ner-hrl';
+let nerModel: Promise<TokenClassificationPipeline> | null = null;
+function getNer(id: number) {
+  nerModel ??= pipeline('token-classification', NER_MODEL, {
+    dtype: 'q8',
+    device: 'wasm',
+    progress_callback: progressReporter(id, 'Baixando modelo NER (~185 MB, só na primeira vez)'),
+  }).catch((err) => {
+    nerModel = null;
+    throw err;
+  }) as Promise<TokenClassificationPipeline>;
+  return nerModel;
 }
 
 async function embed(model: FeatureExtractionPipeline, texts: string[]): Promise<Float32Array> {
@@ -197,6 +211,25 @@ async function sentiment(id: number, sentences: string[]): Promise<SentimentResu
   };
 }
 
+/** Merges word-piece tokens (##suffix) back into full words. */
+async function ner(id: number, text: string): Promise<NerEntity[]> {
+  const model = await getNer(id);
+  // Run on first 2000 chars to keep latency low; user can see status
+  const snippet = text.slice(0, 2000);
+  post({ type: 'progress', id, stage: 'compute', label: 'Detectando entidades…', progress: 0 });
+  const raw = (await model(snippet, { aggregation_strategy: 'simple' })) as unknown as {
+    word: string; entity_group: string; score: number; start: number; end: number;
+  }[];
+  post({ type: 'progress', id, stage: 'compute', label: 'Detectando entidades…', progress: 1 });
+  return raw.map((e) => ({
+    word: e.word,
+    entity: e.entity_group,
+    score: e.score,
+    start: e.start,
+    end: e.end,
+  }));
+}
+
 self.onmessage = async (e: MessageEvent<MLRequest>) => {
   const msg = e.data;
   try {
@@ -235,6 +268,9 @@ self.onmessage = async (e: MessageEvent<MLRequest>) => {
       }
       case 'sentiment':
         post({ type: 'sentiment', id: msg.id, result: await sentiment(msg.id, msg.sentences) });
+        break;
+      case 'ner':
+        post({ type: 'ner', id: msg.id, entities: await ner(msg.id, msg.text) });
         break;
     }
   } catch (err) {
