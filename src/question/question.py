@@ -14,13 +14,15 @@ def load_model():
     template = """Abaixo está uma instrução que descreve uma tarefa. Escreva uma resposta que complete adequadamente o pedido.
 
     ### Instrução:
-    De acordo com o texto fornecido, responda de forma direta à pergunta especificada:
+    De acordo com o texto fornecido, responda de forma direta à pergunta especificada.
 
-    "{instruction}"
+    Texto: "{context}"
 
-    ### Resumo:"""
+    Pergunta: {question}
 
-    prompt = PromptTemplate(template=template, input_variables=["instruction"])
+    ### Resposta:"""
+
+    prompt = PromptTemplate(template=template, input_variables=["context", "question"])
     llm = CTransformers(
         model="recogna-nlp/bode-7b-alpaca-pt-br-gguf",
         model_file="bode-7b-alpaca-q8_0.gguf",
@@ -39,14 +41,14 @@ def truncate_text(text, max_tokens=512):
     truncated_text = tokenizer.decode(truncated_tokens)
     return truncated_text
 
-def answer_question(text_input):
+def answer_question(text_input, question):
     """Função de responder perguntas específicas sobre o texto enviado pelo usuário."""
 
     truncated_text = truncate_text(text_input, max_tokens=512)
 
     try:
         llm_chain = load_model()
-        answer = llm_chain.run(truncated_text)
+        answer = llm_chain.run(context=truncated_text, question=question)
         return answer
     except Exception as e:
-        return f"Desculpe, ocorreu um erro ao gerar o resumo: {str(e)}"
+        return f"Desculpe, ocorreu um erro ao gerar a resposta: {str(e)}"
