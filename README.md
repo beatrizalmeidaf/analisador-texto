@@ -6,6 +6,45 @@
 
 O **Analisador Inteligente de Texto** é uma ferramenta robusta para processamento e análise textual. Utilizando técnicas de Processamento de Linguagem Natural (NLP), estatística e aprendizado de máquina, a aplicação permite extrair informações relevantes de textos em diversos formatos e contextos.
 
+**Acesse online:** https://beatrizalmeidaf.github.io/analisador-texto/
+
+---
+
+## **Versão web (GitHub Pages)**
+
+A versão web, em [`site/`](site/), roda **inteiramente no navegador**: não há servidor, e o texto analisado não sai do computador de quem usa. A análise é refeita **em tempo real** enquanto se digita.
+
+| Recurso | Como funciona | Latência típica |
+|---|---|---|
+| Estatísticas, legibilidade (Flesch PT), histograma de tamanho das palavras | TypeScript puro, num Web Worker | ~0,2 s para um texto de 90 KB |
+| Frequência, termos característicos (TF‑IDF entre parágrafos), expressões (n‑gramas), exportação CSV | idem | idem |
+| Nuvem de palavras interativa (clique para buscar) | `wordcloud2.js` em canvas | instantâneo |
+| Resumo extrativo (TextRank + remoção de redundância) | idem | instantâneo |
+| Busca exata tolerante a acentos, com destaque | idem | instantâneo |
+| Leitura de PDF | `pdf.js` (sem Java/Tika) | depende do arquivo |
+| Busca por significado, resumo semântico, gênero textual (zero‑shot) | [Transformers.js](https://huggingface.co/docs/transformers.js) + `paraphrase-multilingual-MiniLM-L12-v2` (~118 MB, baixado uma vez e guardado em cache) | segundos |
+| Análise de sentimento por frase | `distilbert-base-multilingual-cased-sentiments-student` (~136 MB, sob demanda) | segundos |
+
+Os modelos de IA só são baixados quando a pessoa usa um recurso que depende deles.
+
+### Rodando a versão web localmente
+
+```bash
+cd site
+npm install --ignore-scripts   # os binários nativos do onnxruntime-node não são necessários
+npm run dev                    # servidor de desenvolvimento
+npm test                       # testes do núcleo de análise
+npm run build                  # gera site/dist
+```
+
+O deploy é feito pelo workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) a cada push na `main` que altere `site/`. Para ativar, em **Settings → Pages → Build and deployment**, escolha **GitHub Actions** como fonte.
+
+---
+
+## **Versão Python (Streamlit)**
+
+A versão original continua disponível em [`web/streamlit_app.py`](web/streamlit_app.py) e usa modelos maiores (LLM Bode 7B para resumo e perguntas, XLM‑RoBERTa para gênero), por isso precisa de um servidor com Python. Instruções em [Como rodar o projeto localmente](#como-rodar-o-projeto-localmente).
+
 
 ## **Objetivo do Projeto**
 
