@@ -1,21 +1,28 @@
-import nltk
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
+import re
 from collections import Counter
-from .cleaner import clean_text
-nltk.download('stopwords')
-stopwords = nltk.corpus.stopwords.words('portuguese')
+from functools import lru_cache
 
-text = clean_text()
+import nltk
+
+
+@lru_cache(maxsize=1)
+def get_stopwords():
+    """ Carrega as stopwords em português (baixa o corpus do NLTK apenas se necessário) """
+    try:
+        return frozenset(nltk.corpus.stopwords.words('portuguese'))
+    except LookupError:
+        nltk.download('stopwords', quiet=True)
+        return frozenset(nltk.corpus.stopwords.words('portuguese'))
+
 
 def tokenizer(text):
     """ Tokenização para dividir um texto em unidades menores e remoção
      de palavras de parada """
-    
-    tokens = word_tokenize(text)
-    tokens = [x for x in tokens if x not in stopwords]
-    
-    return tokens
+
+    # o texto já chega sem pontuação (clean_text), então separar por espaços basta
+    # e evita depender do modelo punkt do NLTK
+    stopwords = get_stopwords()
+    return [x for x in re.split(r'\s+', text) if x and x not in stopwords]
 
 def word_counter(tokens):
    """ Contagem de frequência de palavras importantes
@@ -24,7 +31,7 @@ def word_counter(tokens):
 
 
 if __name__ == '__main__':
-    
-    print(tokenizer(text))
-    
+    from .cleaner import clean_text
 
+    with open('data/teste.txt', encoding='utf-8') as f:
+        print(tokenizer(clean_text(f.read())))
