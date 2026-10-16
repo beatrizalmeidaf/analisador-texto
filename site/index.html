@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analisador de Texto</title>
+    <meta name="description" content="Análise de textos em português direto no navegador: estatísticas, legibilidade, palavras-chave, resumo, busca semântica e classificação — sem servidor." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232a78d6'/><path d='M9 22V10h4.5a4 4 0 0 1 0 8H9m8 4 6-12' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <h1>Analisador de Texto</h1>
+        <p class="muted">Tudo é processado no seu navegador. O texto não é enviado a nenhum servidor.</p>
+      </div>
+      <button id="theme" class="icon-btn" type="button" aria-label="Alternar tema claro/escuro" title="Alternar tema">◐</button>
+    </header>
+
+    <main class="layout">
+      <section class="card editor" aria-label="Texto de entrada">
+        <div class="toolbar">
+          <label class="btn">
+            <input id="file" type="file" accept=".txt,.md,.csv,.pdf,text/plain,application/pdf" hidden />
+            Abrir arquivo
+          </label>
+          <button id="sample" class="btn ghost" type="button">Texto de exemplo</button>
+          <button id="clear" class="btn ghost" type="button">Limpar</button>
+        </div>
+        <div class="drop-wrap">
+          <textarea id="input" spellcheck="false" placeholder="Digite, cole ou arraste um arquivo .txt ou .pdf aqui. A análise acontece enquanto você escreve."></textarea>
+          <div id="drop" class="drop" hidden>Solte o arquivo para analisar</div>
+        </div>
+        <div class="editor-foot">
+          <span id="status" class="muted" aria-live="polite">Aguardando texto…</span>
+        </div>
+      </section>
+
+      <section class="results" aria-label="Resultados">
+        <div class="tiles" id="tiles"></div>
+
+        <nav class="tabs" role="tablist">
+          <button role="tab" data-tab="stats" aria-selected="true">Estatísticas</button>
+          <button role="tab" data-tab="words">Palavras</button>
+          <button role="tab" data-tab="cloud">Nuvem</button>
+          <button role="tab" data-tab="summary">Resumo</button>
+          <button role="tab" data-tab="search">Busca</button>
+          <button role="tab" data-tab="ai">Classificação e sentimento</button>
+        </nav>
+
+        <div class="card panel" data-panel="stats" role="tabpanel">
+          <div id="stats-body"></div>
+        </div>
+
+        <div class="card panel" data-panel="words" role="tabpanel" hidden>
+          <div class="panel-head">
+            <div class="seg" id="words-mode" role="radiogroup" aria-label="Tipo de ranking">
+              <button data-v="freq" aria-pressed="true">Frequência</button>
+              <button data-v="tfidf" aria-pressed="false">Termos característicos</button>
+              <button data-v="ngrams" aria-pressed="false">Expressões</button>
+            </div>
+            <button id="export-csv" class="btn ghost small" type="button">Exportar CSV</button>
+          </div>
+          <p id="words-help" class="muted small"></p>
+          <div id="words-chart"></div>
+        </div>
+
+        <div class="card panel" data-panel="cloud" role="tabpanel" hidden>
+          <p class="muted small">As 120 palavras de conteúdo mais frequentes. Clique numa palavra para buscá-la no texto.</p>
+          <div class="cloud-wrap"><canvas id="cloud" aria-label="Nuvem de palavras"></canvas></div>
+        </div>
+
+        <div class="card panel" data-panel="summary" role="tabpanel" hidden>
+          <div class="panel-head">
+            <div class="seg" id="summary-mode" role="radiogroup" aria-label="Método de resumo">
+              <button data-v="stat" aria-pressed="true">Estatístico (instantâneo)</button>
+              <button data-v="ai" aria-pressed="false">Semântico (IA)</button>
+            </div>
+            <label class="range">Frases: <input id="summary-k" type="range" min="1" max="12" value="5" /> <output id="summary-k-out">5</output></label>
+          </div>
+          <p id="summary-help" class="muted small"></p>
+          <div id="summary-progress"></div>
+          <ol id="summary-out" class="summary"></ol>
+          <button id="copy-summary" class="btn ghost small" type="button" hidden>Copiar resumo</button>
+        </div>
+
+        <div class="card panel" data-panel="search" role="tabpanel" hidden>
+          <div class="panel-head">
+            <div class="seg" id="search-mode" role="radiogroup" aria-label="Tipo de busca">
+              <button data-v="exact" aria-pressed="true">Exata</button>
+              <button data-v="ai" aria-pressed="false">Por significado (IA)</button>
+            </div>
+            <label class="check" id="whole-wrap"><input id="whole" type="checkbox" checked /> Palavra inteira</label>
+          </div>
+          <form id="search-form" class="search-row">
+            <input id="query" type="search" placeholder="Busque uma palavra ou expressão" autocomplete="off" />
+            <button class="btn" type="submit">Buscar</button>
+          </form>
+          <p id="search-help" class="muted small"></p>
+          <div id="search-progress"></div>
+          <div id="search-out"></div>
+        </div>
+
+        <div class="card panel" data-panel="ai" role="tabpanel" hidden>
+          <p class="muted small">
+            Os modelos rodam localmente com <a href="https://huggingface.co/docs/transformers.js" target="_blank" rel="noopener">Transformers.js</a> (WebAssembly).
+            No primeiro uso o navegador baixa o modelo, que depois fica em cache.
+          </p>
+          <div class="ai-grid">
+            <div class="ai-block">
+              <h3>Gênero textual</h3>
+              <p class="muted small">Classificação zero-shot por similaridade semântica com descrições de cada gênero (modelo MiniLM multilíngue, ~118 MB).</p>
+              <button id="run-genre" class="btn" type="button">Classificar texto</button>
+              <div id="genre-progress"></div>
+              <div id="genre-out"></div>
+            </div>
+            <div class="ai-block">
+              <h3>Sentimento</h3>
+              <p class="muted small">Polaridade de cada frase (modelo DistilBERT multilíngue, ~136 MB). Até 200 frases, amostradas ao longo do texto.</p>
+              <button id="run-sentiment" class="btn" type="button">Analisar sentimento</button>
+              <div id="sentiment-progress"></div>
+              <div id="sentiment-out"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot muted small">
+      <a href="https://github.com/beatrizalmeidaf/analisador-texto" target="_blank" rel="noopener">Código no GitHub</a>
+    </footer>
+
+    <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

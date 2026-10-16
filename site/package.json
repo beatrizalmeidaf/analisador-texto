@@ -1,0 +1,22 @@
+{
+  "name": "analisador-texto",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "node --test tests/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/wordcloud": "1.2.2",
+    "typescript": "6.0.3",
+    "vite": "8.3.1"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "4.3.0",
+    "pdfjs-dist": "6.3.289",
+    "wordcloud": "1.2.3"
+  }
+}

@@ -1,0 +1,644 @@
+import './style.css';
+import WordCloud from 'wordcloud';
+import AnalysisWorker from './workers/analysis.worker.ts?worker';
+import type { AnalysisRequest, AnalysisResponse, AnalysisResult, MLRequest, MLResponse } from './workers/protocol.ts';
+import { readabilityLabel, lengthInterpretation, type Term } from './core/analyze.ts';
+import { GENRES } from './genres.ts';
+import { $, h, fmt, pct, duration, hbars, columns, stack, progress, highlighted, cssVar } from './ui.ts';
+
+// ---------------------------------------------------------------- workers
+
+/** Omit que distribui sobre uniões (o Omit padrão achata a união). */
+type DistOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
+
+type Pending<R> = { resolve: (r: R) => void; reject: (e: Error) => void; onProgress?: (label: string, p: number) => void };
+
+/** RPC simples sobre postMessage: cada pedido recebe um id e uma Promise. */
+function rpc<Req extends { id: number }, Res extends { id: number; type: string }>(worker: Worker) {
+  let seq = 0;
+  const pending = new Map<number, Pending<Res>>();
+  worker.onmessage = (e: MessageEvent<Res>) => {
+    const m = e.data as Res & { label?: string; progress?: number; message?: string };
+    const p = pending.get(m.id);
+    if (!p) return;
+    if (m.type === 'progress') return p.onProgress?.(m.label!, m.progress!);
+    pending.delete(m.id);
+    if (m.type === 'error') p.reject(new Error(m.message));
+    else p.resolve(m);
+  };
+  return (msg: DistOmit<Req, 'id'>, onProgress?: Pending<Res>['onProgress']) =>
+    new Promise<Res>((resolve, reject) => {
+      const id = ++seq;
+      pending.set(id, { resolve, reject, onProgress });
+      worker.postMessage({ ...msg, id });
+    });
+}
+
+const analysis = rpc<AnalysisRequest, AnalysisResponse>(new AnalysisWorker());
+
+// o worker de IA (e o bundle do Transformers.js) só é carregado quando necessário
+let mlCall: ReturnType<typeof rpc<MLRequest, MLResponse>> | null = null;
+const ml: ReturnType<typeof rpc<MLRequest, MLResponse>> = (msg, onProgress) => {
+  mlCall ??= rpc<MLRequest, MLResponse>(new Worker(new URL('./workers/ml.worker.ts', import.meta.url), { type: 'module' }));
+  return mlCall(msg, onProgress);
+};
+
+// ---------------------------------------------------------------- estado
+
+type Tab = 'stats' | 'words' | 'cloud' | 'summary' | 'search' | 'ai';
+
+const state = {
+  text: '',
+  key: '',
+  result: null as AnalysisResult | null,
+  tab: 'stats' as Tab,
+  dirty: new Set<Tab>(),
+  wordsMode: 'freq' as 'freq' | 'tfidf' | 'ngrams',
+  summaryMode: 'stat' as 'stat' | 'ai',
+  searchMode: 'exact' as 'exact' | 'ai',
+  indexedKey: '',
+};
+
+const store = {
+  get(k: string) {
+    try {
+      return localStorage.getItem(`analisador:${k}`);
+    } catch {
+      return null;
+    }
+  },
+  set(k: string, v: string) {
+    try {
+      localStorage.setItem(`analisador:${k}`, v);
+    } catch {
+      /* armazenamento indisponível ou cheio: segue sem persistir */
+    }
+  },
+};
+
+function hashText(s: string) {
+  let h1 = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h1 ^= s.charCodeAt(i);
+    h1 = Math.imul(h1, 0x01000193);
+  }
+  return `${s.length}-${(h1 >>> 0).toString(36)}`;
+}
+
+// ---------------------------------------------------------------- entrada
+
+const input = $<HTMLTextAreaElement>('#input');
+const status = $('#status');
+
+let timer = 0;
+let latestAnalyze = 0;
+
+function schedule() {
+  clearTimeout(timer);
+  const n = input.value.length;
+  // textos maiores levam mais tempo para analisar: espera o usuário parar de digitar
+  const delay = n < 20_000 ? 120 : n < 300_000 ? 350 : 800;
+  timer = window.setTimeout(runAnalysis, delay);
+}
+
+async function runAnalysis() {
+  const text = input.value;
+  state.text = text;
+  const ticket = ++latestAnalyze;
+  if (!text.trim()) {
+    state.result = null;
+    state.key = '';
+    status.textContent = 'Aguardando texto…';
+    renderAll();
+    store.set('text', '');
+    return;
+  }
+  if (text.length > 300_000) status.textContent = 'Analisando…';
+  const res = await analysis({ type: 'analyze', text });
+  if (ticket !== latestAnalyze || res.type !== 'analysis') return;
+  state.result = res.result;
+  state.key = hashText(text);
+  status.textContent = `${fmt(res.result.stats.words)} palavras · analisado em ${fmt(res.ms)} ms`;
+  renderAll();
+  if (text.length < 2_000_000) store.set('text', text);
+}
+
+input.addEventListener('input', schedule);
+
+function setText(text: string) {
+  input.value = text;
+  input.scrollTop = 0;
+  clearTimeout(timer);
+  runAnalysis();
+}
+
+async function decodeText(buf: ArrayBuffer) {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(buf);
+  } catch {
+    return new TextDecoder('windows-1252').decode(buf);
+  }
+}
+
+async function loadFile(file: File) {
+  try {
+    const buf = await file.arrayBuffer();
+    if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+      status.textContent = `Lendo ${file.name}…`;
+      const { extractPdf } = await import('./pdf.ts');
+      const text = await extractPdf(buf, (p, total) => (status.textContent = `Extraindo texto do PDF: página ${p} de ${total}`));
+      if (!text.trim()) {
+        status.textContent = 'Nenhum texto encontrado no PDF (pode ser um documento escaneado, só com imagens).';
+        return;
+      }
+      setText(text);
+    } else {
+      setText(await decodeText(buf));
+    }
+  } catch (err) {
+    status.textContent = `Não foi possível ler o arquivo: ${err instanceof Error ? err.message : err}`;
+  }
+}
+
+$<HTMLInputElement>('#file').addEventListener('change', (e) => {
+  const f = (e.target as HTMLInputElement).files?.[0];
+  if (f) loadFile(f);
+  (e.target as HTMLInputElement).value = '';
+});
+
+$('#sample').addEventListener('click', async () => {
+  status.textContent = 'Carregando exemplo…';
+  const res = await fetch(`${import.meta.env.BASE_URL}exemplo.txt`);
+  setText(await res.text());
+});
+
+$('#clear').addEventListener('click', () => {
+  setText('');
+  input.focus();
+});
+
+const drop = $('#drop');
+const editor = $('.editor');
+let dragDepth = 0;
+editor.addEventListener('dragenter', (e) => {
+  if (!e.dataTransfer?.types.includes('Files')) return;
+  e.preventDefault();
+  dragDepth++;
+  drop.hidden = false;
+});
+editor.addEventListener('dragover', (e) => e.preventDefault());
+editor.addEventListener('dragleave', () => {
+  if (--dragDepth <= 0) {
+    dragDepth = 0;
+    drop.hidden = true;
+  }
+});
+editor.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dragDepth = 0;
+  drop.hidden = true;
+  const f = e.dataTransfer?.files[0];
+  if (f) loadFile(f);
+});
+
+// ---------------------------------------------------------------- abas e controles
+
+const tabs = document.querySelectorAll<HTMLButtonElement>('[role=tab]');
+function selectTab(tab: Tab) {
+  state.tab = tab;
+  tabs.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === tab)));
+  document.querySelectorAll<HTMLElement>('[data-panel]').forEach((p) => (p.hidden = p.dataset.panel !== tab));
+  if (state.dirty.has(tab)) renderPanel(tab);
+}
+tabs.forEach((b) => b.addEventListener('click', () => selectTab(b.dataset.tab as Tab)));
+
+function segmented<T extends string>(sel: string, onChange: (v: T) => void) {
+  const root = $(sel);
+  root.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest('button');
+    if (!btn) return;
+    root.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+    onChange(btn.dataset.v as T);
+  });
+}
+
+segmented<typeof state.wordsMode>('#words-mode', (v) => {
+  state.wordsMode = v;
+  renderWords();
+});
+segmented<typeof state.summaryMode>('#summary-mode', (v) => {
+  state.summaryMode = v;
+  renderSummary();
+});
+segmented<typeof state.searchMode>('#search-mode', (v) => {
+  state.searchMode = v;
+  $('#whole-wrap').hidden = v === 'ai';
+  $<HTMLInputElement>('#query').placeholder = v === 'ai' ? 'Faça uma pergunta ou descreva o que procura' : 'Busque uma palavra ou expressão';
+  $('#search-out').replaceChildren();
+  renderSearch();
+});
+
+function renderAll() {
+  renderTiles();
+  state.dirty = new Set(['stats', 'words', 'cloud', 'summary', 'search', 'ai']);
+  renderPanel(state.tab);
+}
+
+function renderPanel(tab: Tab) {
+  state.dirty.delete(tab);
+  ({ stats: renderStats, words: renderWords, cloud: renderCloud, summary: renderSummary, search: renderSearch, ai: renderAI })[tab]();
+}
+
+const empty = () => h('p', { class: 'empty' }, 'Digite ou carregue um texto para ver a análise.');
+
+// ---------------------------------------------------------------- blocos de resultado
+
+function renderTiles() {
+  const r = state.result;
+  const tiles = $('#tiles');
+  if (!r) return tiles.replaceChildren();
+  const s = r.stats;
+  const read = readabilityLabel(s.flesch);
+  const tile = (k: string, v: string, sub: string) => h('div', { class: 'tile' }, h('div', { class: 'k' }, k), h('div', { class: 'v' }, v), h('div', { class: 's' }, sub));
+  tiles.replaceChildren(
+    tile('Palavras', fmt(s.words), `${fmt(s.uniqueWords)} distintas`),
+    tile('Frases', fmt(s.sentences), `${fmt(s.paragraphs)} parágrafos`),
+    tile('Leitura', duration(s.readingMinutes), `${duration(s.speakingMinutes)} em voz alta`),
+    tile('Legibilidade', fmt(s.flesch), read.label),
+    tile('Diversidade lexical', pct(s.lexicalDiversity), `${fmt(s.hapax)} palavras únicas`),
+  );
+}
+
+function renderStats() {
+  const body = $('#stats-body');
+  const r = state.result;
+  if (!r) return body.replaceChildren(empty());
+  const s = r.stats;
+  const read = readabilityLabel(s.flesch);
+  const item = (k: string, v: string) => h('div', {}, h('dt', {}, k), h('dd', {}, v));
+  const hist = s.lengthHistogram.slice(1);
+  const totalWords = s.words || 1;
+  body.replaceChildren(
+    h(
+      'dl',
+      { class: 'stat-grid' },
+      item('Caracteres', fmt(s.chars)),
+      item('Caracteres sem espaços', fmt(s.charsNoSpaces)),
+      item('Palavras de conteúdo', fmt(s.contentWords)),
+      item('Palavras por frase', fmt(s.wordsPerSentence, 1)),
+      item('Sílabas por palavra', fmt(s.syllablesPerWord, 2)),
+      item('Tamanho médio da palavra', `${fmt(s.wordLength.mean, 2)} letras`),
+      item('Mediana do tamanho', `${fmt(s.wordLength.median, 1)} letras`),
+      item('Desvio padrão do tamanho', fmt(s.wordLength.std, 2)),
+    ),
+    h('div', { class: 'section-title' }, `Legibilidade: ${fmt(s.flesch)} de 100 (${read.label.toLowerCase()})`),
+    h('div', { class: 'gauge', role: 'meter', 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': Math.round(s.flesch) }, h('span', { class: 'fill', style: `width:${s.flesch}%` })),
+    h('div', { class: 'gauge-scale' }, h('span', {}, 'Muito difícil'), h('span', {}, 'Difícil'), h('span', {}, 'Fácil'), h('span', {}, 'Muito fácil')),
+    h('p', { class: 'muted small' }, `${read.detail} Índice de Flesch adaptado ao português (Martins et al., 1996), calculado a partir de palavras por frase e sílabas por palavra.`),
+    h('div', { class: 'section-title' }, 'Distribuição do tamanho das palavras'),
+    columns(
+      hist,
+      hist.map((_, i) => (i === hist.length - 1 ? `${i + 1}+` : String(i + 1))),
+      (i) => `${i === hist.length - 1 ? `${i + 1} ou mais` : i + 1} letras: ${fmt(hist[i])} palavras (${pct(hist[i] / totalWords)})`,
+    ),
+    h('p', { class: 'muted small' }, 'Número de letras por palavra (eixo horizontal) e quantidade de palavras com aquele tamanho.'),
+    h('div', { class: 'note' }, lengthInterpretation(s.wordLength.mean, s.wordLength.std)),
+  );
+}
+
+const WORDS_HELP = {
+  freq: 'Palavras de conteúdo mais repetidas (sem artigos, preposições e outras stopwords).',
+  tfidf: 'TF-IDF calculado entre os parágrafos (ou trechos) do texto: destaca termos que caracterizam partes específicas, e não os que aparecem em todo lugar. Pontuação relativa ao primeiro termo.',
+  ngrams: 'Sequências de 2 ou 3 palavras que se repetem pelo menos duas vezes.',
+};
+
+function currentTerms(): Term[] {
+  const r = state.result!;
+  return state.wordsMode === 'freq' ? r.frequencies : state.wordsMode === 'tfidf' ? r.keywords : r.ngrams;
+}
+
+function renderWords() {
+  const chart = $('#words-chart');
+  $('#words-help').textContent = WORDS_HELP[state.wordsMode];
+  if (!state.result) return chart.replaceChildren(empty());
+  const terms = currentTerms().slice(0, 25);
+  if (!terms.length) return chart.replaceChildren(h('p', { class: 'empty' }, 'Nada a mostrar para este texto.'));
+  const content = state.result.stats.contentWords || 1;
+  chart.replaceChildren(
+    hbars(
+      terms.map((t) => ({
+        label: t.term,
+        value: t.score,
+        display: state.wordsMode === 'tfidf' ? fmt(t.score, 2) : fmt(t.count),
+        tooltip:
+          state.wordsMode === 'tfidf'
+            ? `${t.term}: relevância ${fmt(t.score, 2)} · ${fmt(t.count)} ocorrências`
+            : `${t.term}: ${fmt(t.count)} ocorrências${state.wordsMode === 'freq' ? ` (${pct(t.count / content)} das palavras de conteúdo)` : ''}`,
+      })),
+      searchFor,
+    ),
+  );
+}
+
+$('#export-csv').addEventListener('click', () => {
+  if (!state.result) return;
+  const rows = [['termo', 'ocorrencias', 'pontuacao'], ...currentTerms().map((t) => [t.term, String(t.count), t.score.toFixed(4)])];
+  const csv = rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+  const a = h('a', { href: URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' })), download: `palavras-${state.wordsMode}.csv` });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+
+function renderCloud() {
+  const canvas = $<HTMLCanvasElement>('#cloud');
+  const ctx = canvas.getContext('2d')!;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const { width, height } = canvas.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.round(width * dpr));
+  canvas.height = Math.max(1, Math.round(height * dpr));
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const words = state.result?.frequencies.slice(0, 120) ?? [];
+  if (!words.length || !width) return;
+  const max = words[0].count;
+  const maxSize = Math.min(canvas.width / 13, canvas.height / 5);
+  const minSize = 11 * dpr;
+  const ramp = cssVar('--cloud-ramp').split(',').map((c) => c.trim());
+  WordCloud(canvas, {
+    list: words.map((w): WordCloud.ListEntry => [w.term, minSize + (maxSize - minSize) * Math.sqrt(w.count / max)]),
+    weightFactor: 1,
+    fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+    fontWeight: '600',
+    // tom único do mais claro (raro) ao mais escuro (frequente) — escala sequencial
+    color: (_word: string, weight: string | number) => {
+      const t = (Number(weight) - minSize) / (maxSize - minSize || 1);
+      const dark = document.documentElement.dataset.theme === 'dark' || (!document.documentElement.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+      const i = Math.round((dark ? 1 - t : t) * (ramp.length - 1));
+      return ramp[Math.max(0, Math.min(ramp.length - 1, i))];
+    },
+    backgroundColor: 'transparent',
+    rotateRatio: 0.15,
+    rotationSteps: 2,
+    shrinkToFit: true,
+    drawOutOfBound: false,
+    gridSize: Math.round(6 * dpr),
+    click: (item) => searchFor(String(item[0])),
+    hover: (item) => {
+      canvas.style.cursor = item ? 'pointer' : 'default';
+    },
+  });
+}
+
+let resizeTimer = 0;
+new ResizeObserver(() => {
+  clearTimeout(resizeTimer);
+  resizeTimer = window.setTimeout(() => state.tab === 'cloud' && state.result && renderCloud(), 200);
+}).observe($('.cloud-wrap'));
+
+// ---------------------------------------------------------------- resumo
+
+const summaryK = $<HTMLInputElement>('#summary-k');
+summaryK.addEventListener('input', () => {
+  $('#summary-k-out').textContent = summaryK.value;
+  renderSummary();
+});
+
+let summaryTicket = 0;
+let lastSummary: string[] = [];
+
+async function ensureIndex(progressEl: HTMLElement) {
+  const r = state.result!;
+  if (state.indexedKey === state.key) return state.key;
+  const key = state.key;
+  progress(progressEl, 'Preparando modelo', null);
+  const res = await ml({ type: 'index', key, sentences: r.sentences.map((s) => s.text) }, (label, p) => progress(progressEl, label, p));
+  if (res.type === 'indexed') {
+    state.indexedKey = res.key;
+    if (res.sampled) progressEl.replaceChildren(h('p', { class: 'muted small' }, `Texto longo: ${fmt(res.count)} de ${fmt(res.total)} frases foram indexadas, amostradas ao longo do texto.`));
+    else progressEl.replaceChildren();
+  }
+  return key;
+}
+
+async function renderSummary() {
+  const out = $('#summary-out');
+  const prog = $('#summary-progress');
+  const copy = $('#copy-summary');
+  $('#summary-help').textContent =
+    state.summaryMode === 'stat'
+      ? 'Resumo extrativo com TextRank: as frases mais centrais do texto, escolhidas por similaridade de vocabulário e sem repetição.'
+      : 'TextRank sobre embeddings semânticos: considera frases parecidas mesmo quando usam palavras diferentes. Usa o modelo MiniLM (~118 MB no primeiro uso).';
+  if (!state.result) {
+    prog.replaceChildren();
+    copy.hidden = true;
+    return out.replaceChildren(empty());
+  }
+  const ticket = ++summaryTicket;
+  const k = Number(summaryK.value);
+  const sents = state.result.sentences;
+  try {
+    let indices: number[];
+    if (state.summaryMode === 'stat') {
+      prog.replaceChildren();
+      const res = await analysis({ type: 'summarize', k });
+      indices = res.type === 'summary' ? res.indices : [];
+    } else {
+      const key = await ensureIndex(prog);
+      const res = await ml({ type: 'semantic-summary', key, k });
+      indices = res.type === 'summary' ? res.indices : [];
+    }
+    if (ticket !== summaryTicket) return;
+    lastSummary = indices.map((i) => sents[i]?.text).filter(Boolean);
+    out.replaceChildren(...(lastSummary.length ? lastSummary.map((t) => h('li', {}, t)) : [h('p', { class: 'empty' }, 'O texto é curto demais para resumir.')]));
+    copy.hidden = !lastSummary.length;
+  } catch (err) {
+    if (ticket === summaryTicket) prog.replaceChildren(h('p', { class: 'error' }, `Erro: ${(err as Error).message}`));
+  }
+}
+
+$('#copy-summary').addEventListener('click', async (e) => {
+  const btn = e.currentTarget as HTMLButtonElement;
+  try {
+    await navigator.clipboard.writeText(lastSummary.join('\n'));
+    btn.textContent = 'Copiado!';
+  } catch {
+    btn.textContent = 'Não foi possível copiar';
+  }
+  setTimeout(() => (btn.textContent = 'Copiar resumo'), 1500);
+});
+
+// ---------------------------------------------------------------- busca
+
+const query = $<HTMLInputElement>('#query');
+let searchTimer = 0;
+let searchTicket = 0;
+
+function searchFor(term: string) {
+  query.value = term;
+  if (state.searchMode !== 'exact') $<HTMLButtonElement>('#search-mode [data-v=exact]').click();
+  selectTab('search');
+  renderSearch();
+}
+
+query.addEventListener('input', () => {
+  if (state.searchMode !== 'exact') return;
+  clearTimeout(searchTimer);
+  searchTimer = window.setTimeout(renderSearch, 150);
+});
+$('#whole').addEventListener('change', () => renderSearch());
+$('#search-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  renderSearch(true);
+});
+
+async function renderSearch(submitted = false) {
+  const out = $('#search-out');
+  const prog = $('#search-progress');
+  const help = $('#search-help');
+  const q = query.value.trim();
+  help.textContent =
+    state.searchMode === 'exact'
+      ? 'Ignora acentos e maiúsculas: “informacao” encontra “Informação”.'
+      : 'Encontra as frases com significado mais próximo da pergunta, mesmo sem as mesmas palavras. Usa o modelo MiniLM (~118 MB no primeiro uso).';
+  if (!state.result) return out.replaceChildren(empty());
+  if (!q) return out.replaceChildren();
+  const ticket = ++searchTicket;
+  const sents = state.result.sentences;
+  try {
+    if (state.searchMode === 'exact') {
+      const res = await analysis({ type: 'search', query: q, wholeWord: $<HTMLInputElement>('#whole').checked });
+      if (ticket !== searchTicket || res.type !== 'search') return;
+      out.replaceChildren(
+        h('p', { class: 'small' }, res.total ? `${fmt(res.total)} ocorrência${res.total > 1 ? 's' : ''} em ${fmt(res.hits.length)}${res.hits.length >= 200 ? '+' : ''} frase${res.hits.length > 1 ? 's' : ''}` : 'Nenhuma ocorrência.'),
+        ...res.hits.map((hit) =>
+          h('div', { class: 'hit' }, h('div', { class: 'meta' }, `Parágrafo ${sents[hit.sentence].para + 1}`), highlighted(sents[hit.sentence].text, hit.ranges)),
+        ),
+      );
+    } else {
+      if (!submitted) return;
+      const key = await ensureIndex(prog);
+      const res = await ml({ type: 'ask', key, question: q, k: 8 });
+      if (ticket !== searchTicket || res.type !== 'answer') return;
+      out.replaceChildren(
+        ...res.matches.map((m) => {
+          const prev = sents[m.sentence - 1];
+          const next = sents[m.sentence + 1];
+          const sameP = (s?: { para: number }) => s && s.para === sents[m.sentence].para;
+          return h(
+            'div',
+            { class: 'hit' },
+            h('div', { class: 'meta' }, `Similaridade ${pct(Math.max(0, m.score))} · parágrafo ${sents[m.sentence].para + 1}`),
+            sameP(prev) ? h('span', { class: 'ctx' }, `${prev!.text} `) : null,
+            h('strong', {}, sents[m.sentence].text),
+            sameP(next) ? h('span', { class: 'ctx' }, ` ${next!.text}`) : null,
+          );
+        }),
+      );
+    }
+  } catch (err) {
+    if (ticket === searchTicket) prog.replaceChildren(h('p', { class: 'error' }, `Erro: ${(err as Error).message}`));
+  }
+}
+
+// ---------------------------------------------------------------- IA: gênero e sentimento
+
+function staleNote(container: HTMLElement) {
+  if (container.dataset.key && container.dataset.key !== state.key && container.childElementCount && !container.querySelector('.stale')) {
+    container.prepend(h('p', { class: 'muted small stale' }, 'O texto mudou desde esta análise. Rode novamente para atualizar.'));
+  }
+}
+
+function renderAI() {
+  staleNote($('#genre-out'));
+  staleNote($('#sentiment-out'));
+  $<HTMLButtonElement>('#run-genre').disabled = !state.result;
+  $<HTMLButtonElement>('#run-sentiment').disabled = !state.result;
+}
+
+async function withButton(btn: HTMLButtonElement, fn: () => Promise<void>) {
+  btn.disabled = true;
+  try {
+    await fn();
+  } finally {
+    btn.disabled = !state.result;
+  }
+}
+
+$('#run-genre').addEventListener('click', (e) =>
+  withButton(e.currentTarget as HTMLButtonElement, async () => {
+    const out = $('#genre-out');
+    const prog = $('#genre-progress');
+    if (!state.result) return;
+    try {
+      const key = await ensureIndex(prog);
+      const res = await ml({ type: 'classify', key });
+      if (res.type !== 'genres') return;
+      const top = res.genres[0];
+      const def = GENRES.find((g) => g.label === top.label);
+      out.dataset.key = key;
+      out.replaceChildren(
+        h('div', { class: 'genre-top' }, top.label),
+        h('p', { class: 'muted small' }, def?.description ?? ''),
+        hbars(
+          res.genres.map((g) => ({ label: g.label, value: g.score, display: pct(g.score), tooltip: `${g.label}: ${pct(g.score)} de afinidade` })),
+        ),
+        h('p', { class: 'muted small' }, 'Afinidade relativa entre os gêneros (soma 100%). É uma estimativa por similaridade, não um classificador treinado para esta tarefa.'),
+      );
+    } catch (err) {
+      prog.replaceChildren(h('p', { class: 'error' }, `Erro: ${(err as Error).message}`));
+    }
+  }),
+);
+
+$('#run-sentiment').addEventListener('click', (e) =>
+  withButton(e.currentTarget as HTMLButtonElement, async () => {
+    const out = $('#sentiment-out');
+    const prog = $('#sentiment-progress');
+    const r = state.result;
+    if (!r) return;
+    const key = state.key;
+    try {
+      progress(prog, 'Preparando modelo', null);
+      const res = await ml({ type: 'sentiment', key, sentences: r.sentences.map((s) => s.text) }, (label, p) => progress(prog, label, p));
+      prog.replaceChildren();
+      if (res.type !== 'sentiment') return;
+      const { distribution: d, mostPositive, mostNegative, analyzed } = res.result;
+      const quote = (cls: string, i: number) => h('div', { class: `quote ${cls}` }, r.sentences[i]?.text ?? '');
+      out.dataset.key = key;
+      const parts: (Node | null)[] = [
+        stack([
+          { label: 'Positivo', value: d.positive, color: 'var(--series-1)' },
+          { label: 'Neutro', value: d.neutral, color: 'var(--neu)' },
+          { label: 'Negativo', value: d.negative, color: 'var(--neg)' },
+        ]),
+        h('p', { class: 'muted small' }, `Média sobre ${fmt(analyzed)} frases.`),
+        mostPositive.length ? h('div', { class: 'section-title' }, 'Frases mais positivas') : null,
+        ...mostPositive.map((p) => quote('pos', p.sentence)),
+        mostNegative.length ? h('div', { class: 'section-title' }, 'Frases mais negativas') : null,
+        ...mostNegative.map((p) => quote('neg', p.sentence)),
+      ];
+      out.replaceChildren(...parts.filter((n): n is Node => n !== null));
+    } catch (err) {
+      prog.replaceChildren(h('p', { class: 'error' }, `Erro: ${(err as Error).message}`));
+    }
+  }),
+);
+
+// ---------------------------------------------------------------- tema
+
+const root = document.documentElement;
+const savedTheme = store.get('theme');
+if (savedTheme === 'light' || savedTheme === 'dark') root.dataset.theme = savedTheme;
+$('#theme').addEventListener('click', () => {
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+  store.set('theme', root.dataset.theme);
+  // a nuvem é desenhada em canvas: precisa ser redesenhada com a nova paleta
+  state.dirty.add('cloud');
+  if (state.tab === 'cloud') renderPanel('cloud');
+});
+
+// ---------------------------------------------------------------- início
+
+const saved = store.get('text');
+if (saved) setText(saved);
+else renderAll();
